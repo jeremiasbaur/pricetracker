@@ -11,12 +11,12 @@ session = session()
 
 #ap_digitec= Storage(name='Samsung Galaxy S9+', keyword='9017478', company="Digitec", price=float(499), date=datetime.datetime.now())
 
-netgear = session.query(Product).filter(Product.name == 'Beoplay H4 Black')[0]
+netgear = session.query(Product).filter(Product.manufacturer_id == 'D9L18A#A80').first()
 #net = Product(name = 'UE43NU7092', manufacturer='Samsung', manufacturer_id='UE43NU7092UXXH')
 
-digitec = session.query(Company).filter(Company.name == 'Digitec')[0]
-microspot = session.query(Company).filter(Company.name == 'Microspot')[0]
-conrad = session.query(Company).filter(Company.name == 'Conrad')[0]
+digitec = session.query(Company).filter(Company.name == 'Digitec').first()
+microspot = session.query(Company).filter(Company.name == 'Microspot').first()
+conrad = session.query(Company).filter(Company.name == 'Conrad').first()
 
 #comp = Company('Conrad', 'https://www.conrad.ch/', 'https://www.conrad.ch/de/')
 
@@ -33,6 +33,8 @@ conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
 #microspot_scraper.scrape_for_day()
 #conrad_scraper.scrape_for_day()
 
+#print(digitec_scraper.scrape_manufacturer_id(session.query(ProductCompany).filter(ProductCompany.product_id==netgear.id).first()))
+
 #tinte_digitec = session.query(ProductCompany).filter(ProductCompany.tag == '3230182').first()
 
 #print(digitec_scraper.scrape_price(netgear))
@@ -44,17 +46,35 @@ conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
 #session.add(samsung)
 #digitec_scraper.scrape_by_manufacturer_tag(samsung)
 
+#digitec_scraper.scrape_tag_category_products(77, 1000, 0)
+
+#print(microspot_scraper.scrape_by_manufacturer_id(netgear, save=True))
+print(microspot_scraper.scrape_price(netgear))
+
+#for price in session.query(Price).filter(Price.product_company_id == microspot_scraper.scrape_by_manufacturer_id(netgear)).order_by(asc(Price.date)):
+#    print(price.price)
+
+#for product in session.query(Product):
+#    print(product.manufacturer, product.name)
+#    print(microspot_scraper.scrape_by_manufacturer_id(product, save=True))
+
+started = datetime.datetime.now()
 for product in session.query(Product):
-    plt.figure(product.id)
-    plt.suptitle(product.name)
+    #plt.figure(product.id)
+    #plt.suptitle(product.name)
     for product_company in session.query(ProductCompany).filter(ProductCompany.product_id == product.id):
-        prices = session.query(Price).filter(Price.product_company_id == product_company.id).order_by(asc(Price.date))
-        if prices.count() == 0:
+        #prices = session.query(Price).filter(Price.product_company_id == product_company.id).order_by(asc(Price.date))
+        prices = product_company.prices
+        #prices = session.query(Price).intersect()
+        #print(session.query(ProductCompany).get(product_company.id))
+        print(prices)
+        # prices.count() == 0:
+        if len(prices) == 0:
             continue
         last_price = prices[0]
         x = []
         y = []
-        for price in prices:
+        for price in reversed(prices):
             x.append(mdates.date2num(datetime.date(price.date.year, price.date.month, price.date.day)))
             y.append(price.price)
 
@@ -62,15 +82,15 @@ for product in session.query(Product):
                 print("Product: %s \tCompany: %s \tID: %s"%(product.name, session.query(Company).get(product_company.company_id).name, product_company.tag))
                 print("Price before: %f \tnow: %f \tdate: %s"%(last_price.price, price.price, price.date))
             last_price = price
-        plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
-        #plt.plot([i for i in range(len(y))], y)
-        plt.gcf().autofmt_xdate()
-        myFmt = mdates.DateFormatter('%D')
-        plt.gca().xaxis.set_major_formatter(myFmt)
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+        #plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
+         #plt.plot([i for i in range(len(y))], y)
+        #plt.gcf().autofmt_xdate()
+        #myFmt = mdates.DateFormatter('%D')
+        #plt.gca().xaxis.set_major_formatter(myFmt)
+        #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
         #print(prices[-1].price)
-
-plt.show()
+print("Took %s seconds to query all prices"%(datetime.datetime.now()-started))
+#plt.show()
 
 #session.add(net)
 session.commit()
