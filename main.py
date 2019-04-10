@@ -57,9 +57,14 @@ print(microspot_scraper.scrape_price(netgear))
 #for product in session.query(Product):
 #    print(product.manufacturer, product.name)
 #    print(microspot_scraper.scrape_by_manufacturer_id(product, save=True))
-
+biggest_changes = []
+counter = 0
 started = datetime.datetime.now()
 for product in session.query(Product):
+    #if counter > 19:
+    #    break
+    print(counter)
+    counter+=1
     #plt.figure(product.id)
     #plt.suptitle(product.name)
     for product_company in session.query(ProductCompany).filter(ProductCompany.product_id == product.id):
@@ -67,20 +72,25 @@ for product in session.query(Product):
         prices = product_company.prices
         #prices = session.query(Price).intersect()
         #print(session.query(ProductCompany).get(product_company.id))
-        print(prices)
+        [print(i.date, end='') for i in prices]
+        print("\t")
         # prices.count() == 0:
         if len(prices) == 0:
             continue
         last_price = prices[0]
         x = []
         y = []
-        for price in reversed(prices):
+        #for price in reversed(prices):
+        for price in prices:
+            print(last_price.date<price.date)
             x.append(mdates.date2num(datetime.date(price.date.year, price.date.month, price.date.day)))
             y.append(price.price)
 
             if last_price.price != price.price:
                 print("Product: %s \tCompany: %s \tID: %s"%(product.name, session.query(Company).get(product_company.company_id).name, product_company.tag))
                 print("Price before: %f \tnow: %f \tdate: %s"%(last_price.price, price.price, price.date))
+                if len(prices) >= 2 and price == prices[-1] and price.price/last_price.price < 0.9:
+                    biggest_changes.append([price.date, price.price, last_price.price, product.name, session.query(Company).get(product_company.company_id).name, product_company.tag])
             last_price = price
         #plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
          #plt.plot([i for i in range(len(y))], y)
@@ -91,6 +101,8 @@ for product in session.query(Product):
         #print(prices[-1].price)
 print("Took %s seconds to query all prices"%(datetime.datetime.now()-started))
 #plt.show()
+
+print(biggest_changes)
 
 #session.add(net)
 session.commit()

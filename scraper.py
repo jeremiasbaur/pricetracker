@@ -55,9 +55,13 @@ class Scraper():
         """
         counter = 0
         for product in self.session.query(ProductCompany).filter(ProductCompany.company_id == self.info[2]):
-            self.scrape_price(product, save=True)
+            try:
+                self.scrape_price(product, save=True)
+            except Exception as e:
+                print(e)
+                print("Failed at product %s"%(product.tag))
             counter+=1
-        print('Updated %d products for company %s'%(counter, self.session.query(Company).get(self.info[2]).name))
+            print('Updated %d products for company %s'%(counter, self.session.query(Company).get(self.info[2]).name))
         self.session.commit()
 
     def scrape_by_manufacturer_id(self, product):
