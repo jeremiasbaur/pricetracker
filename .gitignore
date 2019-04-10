@@ -221,3 +221,7 @@ pip-log.txt
 .idea/*
 .idea/encodings.xml
 .idea/misc.xml
+
+Website/*
+.idea
+.idea/workspace.xml
