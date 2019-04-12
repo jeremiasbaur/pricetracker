@@ -1,5 +1,5 @@
 # An example to get the remaining rate limit using the Github GraphQL API.
-import requests
+import requests, re
 
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
@@ -559,9 +559,5 @@ query = 'https://www.microspot.ch/mspocc/occ/msp/products/search?currentPage=0&p
 # tag category
 #for product in result['data']['tag']['products']['results']:
 #    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
-from bs4 import BeautifulSoup as bs
 
-soup = bs(requests.get("https://www.conrad.ch/de/p/netgear-ex8000-wlan-repeater-2-4-ghz-5-ghz-5-ghz-1604352.html", headers=headers).content, 'html.parser')
-print(soup)
-price = soup.find('p', {'id': 'productPriceUnitPrice'}).get('content')
-print(price)
+print(re.sub(r'.* ', '', 'CHF 201.5'))

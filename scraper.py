@@ -5,7 +5,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import and_
 
-import json, time
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.expected_conditions import presence_of_element_located
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+
+import json, time, re
 
 class Scraper():
     engine = create_engine('postgresql://postgres:trackit@localhost:5432/pricetracker_database')
@@ -15,6 +23,9 @@ class Scraper():
     session = session()
 
     header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+
+    driver = webdriver.Firefox(executable_path=r'.\Website\geckodriver-v0.24.0-win64\geckodriver.exe')
+    wait = WebDriverWait(driver,20)
 
     def __init__(self, website_url, scrape_base_url, id):
         self.info = [website_url, scrape_base_url, id]
@@ -197,8 +208,13 @@ class MicrospotScraper(Scraper):
 class ConradScraper(Scraper):
     def scrape_price(self, product, save=False):
         product = super().scrape_price(product)
-        soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
-        price = soup.find(itemprop='price').get('content')
+
+        #soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
+        #price = soup.find(itemprop='price').get('content')
+
+        self.driver.get(self.url_product(product))
+        self.wait.until(presence_of_element_located((By.ID, 'productPriceUnitPrice')))
+        price = re.sub(r'.* ', '', self.driver.find_element_by_id('productPriceUnitPrice').text)
 
         if save:
             new_product_price = Price(price, datetime.datetime.now())

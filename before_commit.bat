@@ -1,0 +1,1 @@
+pg_dump -U postgres -O pricetracker_database > pricetracker_database.sql
