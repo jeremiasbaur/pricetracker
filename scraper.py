@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import and_
 
-import json
+import json, time
 
 class Scraper():
     engine = create_engine('postgresql://postgres:trackit@localhost:5432/pricetracker_database')
@@ -62,6 +62,7 @@ class Scraper():
                 print("Failed at product %s"%(product.tag))
             counter+=1
             print('Updated %d products for company %s'%(counter, self.session.query(Company).get(self.info[2]).name))
+            time.sleep(0.4)
         self.session.commit()
 
     def scrape_by_manufacturer_id(self, product):

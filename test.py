@@ -539,11 +539,11 @@ variables_tag = { "tagId": 1, "sectorId": 1, "tagIdsFromNavigation": [ 1 ], "off
 
 json_query = {'query': query_tag, 'variables': variables_tag}
 
-result = run_query(json_query) # Execute the query
+#result = run_query(json_query) # Execute the query
 
 query = 'https://www.microspot.ch/mspocc/occ/msp/products/search?currentPage=0&pageSize={}&query={}%20%3Arelevance&lang=de'.format(24, "20M7001EMZ")
 
-print(requests.get(query, headers=headers).json())
+#print(requests.get(query, headers=headers).json())
 #remaining_rate_limit = result["data"]["rateLimit"]["remaining"] # Drill down the dictionary
 #print("Remaining rate limit - {}".format(remaining_rate_limit))
 #print(result)
@@ -557,5 +557,11 @@ print(requests.get(query, headers=headers).json())
 #    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
 
 # tag category
-for product in result['data']['tag']['products']['results']:
-    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
+#for product in result['data']['tag']['products']['results']:
+#    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
+from bs4 import BeautifulSoup as bs
+
+soup = bs(requests.get("https://www.conrad.ch/de/p/netgear-ex8000-wlan-repeater-2-4-ghz-5-ghz-5-ghz-1604352.html", headers=headers).content, 'html.parser')
+print(soup)
+price = soup.find('p', {'id': 'productPriceUnitPrice'}).get('content')
+print(price)

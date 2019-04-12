@@ -11,7 +11,7 @@ session = session()
 
 #ap_digitec= Storage(name='Samsung Galaxy S9+', keyword='9017478', company="Digitec", price=float(499), date=datetime.datetime.now())
 
-netgear = session.query(Product).filter(Product.manufacturer_id == 'D9L18A#A80').first()
+netgear = session.query(Product).filter(Product.manufacturer_id == '9H.LGLLB.QBE').first()
 #net = Product(name = 'UE43NU7092', manufacturer='Samsung', manufacturer_id='UE43NU7092UXXH')
 
 digitec = session.query(Company).filter(Company.name == 'Digitec').first()
@@ -49,7 +49,7 @@ conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
 #digitec_scraper.scrape_tag_category_products(77, 1000, 0)
 
 #print(microspot_scraper.scrape_by_manufacturer_id(netgear, save=True))
-print(microspot_scraper.scrape_price(netgear))
+#print(microspot_scraper.scrape_price(netgear, save=True))
 
 #for price in session.query(Price).filter(Price.product_company_id == microspot_scraper.scrape_by_manufacturer_id(netgear)).order_by(asc(Price.date)):
 #    print(price.price)
@@ -61,8 +61,9 @@ biggest_changes = []
 counter = 0
 started = datetime.datetime.now()
 for product in session.query(Product):
-    #if counter > 19:
-    #    break
+    if counter > 19:
+        pass
+        #break
     print(counter)
     counter+=1
     #plt.figure(product.id)
@@ -89,8 +90,8 @@ for product in session.query(Product):
             if last_price.price != price.price:
                 print("Product: %s \tCompany: %s \tID: %s"%(product.name, session.query(Company).get(product_company.company_id).name, product_company.tag))
                 print("Price before: %f \tnow: %f \tdate: %s"%(last_price.price, price.price, price.date))
-                if len(prices) >= 2 and price == prices[-1] and price.price/last_price.price < 0.9:
-                    biggest_changes.append([price.date, price.price, last_price.price, product.name, session.query(Company).get(product_company.company_id).name, product_company.tag])
+                if len(prices) >= 2 and price == prices[-1] and price.price/last_price.price < 0.8:
+                    biggest_changes.append([1-price.price/last_price.price, price.price, last_price.price, product.name, session.query(Company).get(product_company.company_id).name, product_company.tag])
             last_price = price
         #plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
          #plt.plot([i for i in range(len(y))], y)
@@ -98,11 +99,11 @@ for product in session.query(Product):
         #myFmt = mdates.DateFormatter('%D')
         #plt.gca().xaxis.set_major_formatter(myFmt)
         #plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-        #print(prices[-1].price)
+        print(prices[-1].price)
 print("Took %s seconds to query all prices"%(datetime.datetime.now()-started))
-#plt.show()
+plt.show()
 
-print(biggest_changes)
+[print(i) for i in biggest_changes]
 
 #session.add(net)
 session.commit()
