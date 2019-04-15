@@ -73,7 +73,7 @@ class Scraper():
                 print("Failed at product %s"%(product.tag))
             counter+=1
             print('Updated %d products for company %s'%(counter, self.session.query(Company).get(self.info[2]).name))
-            time.sleep(0.4)
+            #time.sleep(0.4)
         self.session.commit()
 
     def scrape_by_manufacturer_id(self, product):
@@ -147,8 +147,12 @@ class DigitecScraper(Scraper):
                     new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id)
                     new_product_company = ProductCompany(tag=product['id'], company=self.session.query(Company).get(self.info[2]), product=new_product)
                     self.session.add_all([new_product, new_product_company])
-                    self.scrape_price(new_product_company, True)
-                    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
+                    try:
+                        self.scrape_price(new_product_company, True)
+                        print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
+                    except Exception as e:
+                        print(e)
+                        print("Failed at getting Price of product: %s"%(product['fullName']))
                 else:
                     print("already in database")
                 counter += 1
