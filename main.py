@@ -161,7 +161,7 @@ try:
     microspot_scraper = MicrospotScraper(microspot.url, microspot.scrape_url, microspot.id)
     conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
 
-    if False:
+    if True:
         digitec_scraper.scrape_for_day()
         microspot_scraper.scrape_for_day()
         conrad_scraper.scrape_for_day()
@@ -170,7 +170,7 @@ try:
     res = session.query(Product).filter(Product.manufacturer_id == '1066253').first()
 
     result = price_analyser_biggest_change(False)
-    #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
+    #result = price_analyser_biggest_change_overall(1) # 0 sort for absolute change, 1 sort for percent change
     #get_pricegraph(res)
 
     counter = 0
@@ -183,3 +183,39 @@ finally:
     session.commit()
     session.close()
     Scraper.driver.quit()
+
+"""
+error products:
+LX50 (Over-Ear, Schwarz) Microspot
+G12IG 19V1 (Intel Core i7-8700, 16GB, SSD, HDD) Microspot
+G9IG 19V1 (Intel Core i5-8400, 8GB, SSD, HDD) Microspot
+G12AR 19V1 (AMD Ryzen 7 2700X, 16GB, SSD, HDD) Microspot
+M9 (2GB, Schwarz) Microspot
+0001345833 Microspot
+0001713855 Microspot
+0001703185 Microspot
+0001054911 Microspot
+0001725909 Microspot
+
+6843426 digitec
+6191539 digitec
+10133029 digitec
+8218823 digitec
+8985094 digitec
+7033103 digitec
+9632782 digitec
+5627781 digitec
+6333008 digitec
+6982815 digitec
+9623754 digitec
+6190303 digitec
+8810945 digitec
+2452586 digitec
+10369198 digitec
+10450681 digitec
+8182687 digitec
+8218823 digitec
+8985094 digitec
+10125597 digitec
+
+"""
