@@ -31,13 +31,6 @@ class Storage(Base):
         self.price = price
         self.date = date
 
-"""
-association_table = Table('association', Base.metadata,
-    Column('product_id', Integer, ForeignKey('product.id')),
-    Column('company_id', Integer, ForeignKey('company.id'))
-)
-"""
-
 class Product(Base):
     __tablename__ = 'product'
     id = Column('id', Integer, primary_key=True)
@@ -78,6 +71,7 @@ class ProductCompany(Base):
     company = relationship(Company, back_populates='stock') # backlinking
 
     tag = Column(String, nullable=False)
+    url = Column(String)
 
     prices = relationship("Price") # One to many with prices
 
