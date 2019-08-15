@@ -13,10 +13,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 
+geckodriver_path = r'.\Website\geckodriver-v0.24.0-win64\geckodriver.exe'
+
 import json, time, re
 
 class Scraper():
-    engine = create_engine('postgresql://postgres:trackit@localhost:5432/pricetracker_database')
+    engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
     Base.metadata.create_all(engine)
 
     session = sessionmaker(engine)
@@ -24,11 +26,11 @@ class Scraper():
 
     header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
-    driver = webdriver.Firefox(executable_path=r'.\Website\geckodriver-v0.24.0-win64\geckodriver.exe')
-    wait = WebDriverWait(driver,20)
+    driver = webdriver.Firefox(executable_path=geckodriver_path)
+    wait = WebDriverWait(driver, 20)
 
-    def __init__(self, website_url = None, scrape_base_url = None, id = None):
-        if website_url != None and scrape_base_url != None and id != None:
+    def __init__(self, website_url=None, scrape_base_url=None, id=None):
+        if website_url is not None and scrape_base_url is not None and id is not None:
             self.info = [website_url, scrape_base_url, id]
 
     def get_product_company(self, product):
@@ -71,11 +73,14 @@ class Scraper():
             try:
                 self.scrape_price(product, save=True)
             except Exception as e:
-                print(f"Failed at product {product.tag} with name {self.session.query(Product).get(product.product_id).manufacturer} {self.session.query(Product).get(product.product_id).name} of company {self.session.query(Company).get(self.info[2]).name}")
+                print(f"Failed at product {product.tag} \
+                        with name {self.session.query(Product).get(product.product_id).manufacturer} \
+                        {self.session.query(Product).get(product.product_id).name} of company \
+                        {self.session.query(Company).get(self.info[2]).name}")
                 failed.append(self.session.query(Product).get(product.product_id))
-            counter+=1
-            print('Updated %d products for company %s'%(counter, self.session.query(Company).get(self.info[2]).name))
-            #time.sleep(0.4)
+            counter += 1
+            print('Updated %d products for company %s' % (counter, self.session.query(Company).get(self.info[2]).name))
+            # time.sleep(0.4)
         self.session.commit()
         return failed
 
@@ -84,8 +89,10 @@ class Scraper():
 
     def insert_new_product(self, product, with_price=False):
         if isinstance(product, Product):
-            results = scrape_by_manufacturer_tag(product)
-            new_product = ProductCompany(tag=results[0], product=product, company=self.session.query(Company).get(self.info[2]))
+            results = self.scrape_by_manufacturer_id(product)
+            new_product = ProductCompany(tag=results[0],
+                                         product=product,
+                                         company=self.session.query(Company).get(self.info[2]))
             if with_price:
                 self.scrape_price(product = new_product, save = True)
             self.session.commit()
@@ -99,9 +106,9 @@ class DigitecScraper(Scraper):
     def scrape_price(self, product, save=False):
         product = super().scrape_price(product)
         soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
-        #print(soup.find_all('script', {'type':'application/ld+json'}))
+        # print(soup.find_all('script', {'type':'application/ld+json'}))
         data = None
-        for schema in soup.find_all('script', {'type':'application/ld+json'}):
+        for schema in soup.find_all('script', {'type': 'application/ld+json'}):
             if 'sku' in json.loads(schema.contents[0]) and json.loads(schema.contents[0])['sku'] == int(product.tag):
                 data = json.loads(schema.contents[0])
                 break
@@ -109,9 +116,10 @@ class DigitecScraper(Scraper):
         try:
             price = data['offers']['lowPrice']
         except Exception as e:
-            print(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} with exception {e}, url: {self.url_product(product)}')
+            print(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} \
+                    with exception {e}, url: {self.url_product(product)}')
             return None
-        if save!= None and save:
+        if save is not None and save:
             new_product_price = Price(price, datetime.datetime.now())
             product.prices.append(new_product_price)
 
@@ -158,9 +166,9 @@ class DigitecScraper(Scraper):
                 print(self.url_product(product['id']))
                 manufacturer_id = self.scrape_manufacturer_id_url(self.url_product(product['id']))
 
-                if manufacturer_id == None:
+                if manufacturer_id is None:
                     continue
-                if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() == None: #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
+                if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None: #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
                     print("add %i"%counter)
                     new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id)
                     new_product_company = ProductCompany(tag=product['id'], company=self.session.query(Company).get(self.info[2]), product=new_product)

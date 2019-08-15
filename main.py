@@ -24,57 +24,51 @@ from dateutil import parser
 #print(microspot_scraper.scrape_by_manufacturer_id(netgear, save=True))
 #print(microspot_scraper.scrape_price(netgear, save=True))
 
-def price_analyser_biggest_change(show_graph = False):
+def binary_search(prices, value):
+    """
+    :param prices: list of prices
+    :param value: value to retrieve range
+    :return: index range of value
+    """
+    l_leftmost = 0
+    r = len(prices)
+    while l_leftmost < r:
+        mid = int((l_leftmost + r) / 2)
+        if prices[mid].product_company_id < value:
+            l_leftmost = mid+1
+        else:
+            r = mid
+
+    l_rightmost = 0
+    r = len(prices)
+    while l_rightmost < r:
+        mid = int((l_rightmost + r) / 2)
+        if prices[mid].product_company_id > value:
+            r = mid
+        else:
+            l_rightmost = mid+1
+    return l_leftmost, l_rightmost - 1
+
+def price_analyser_biggest_change():
     biggest_changes = []
     counter = 0
     started = datetime.datetime.now()
+    prices = session.query(Price).order_by(Price.product_company_id.asc()).order_by(Price.date.asc()).all()
     for product in session.query(Product):
-        if show_graph and counter > 19:
-            break
-            pass
-
-        print(counter)
-        counter+=1
-        if show_graph: plt.figure(product.id)
-        if show_graph: plt.suptitle(product.name)
+        print(datetime.datetime.now()-started)
+        counter += 1
         for product_company in product.product_offered:
-            prices = product_company.prices
-
-            #[print(i.date, end='') for i in prices]
-
-            if len(prices) == 0:
+            l, r = binary_search(prices, product_company.id)
+            print(l, r)
+            if r-l <= 0:
                 continue
-            last_price = prices[0]
-            x = []
-            y = []
 
-            if len(prices)>=2 and prices[-1].price != prices[-2].price:
-                biggest_changes.append({"percent_change": 1-prices[-1].price/prices[-2].price, "price": prices[-1].price, "last_price": prices[-2].price, "product_name": product.name, "company": session.query(Company).get(product_company.company_id).name, "id": product_company.tag, "date": prices[-1].date,"product": product})
+            if prices[r].price != prices[r-1].price:
+                biggest_changes.append({"percent_change": 1-prices[r].price/prices[r-1].price, "price": prices[r].price, "last_price": prices[r-1].price, "product_name": product.name, "company": session.query(Company).get(product_company.company_id).name, "id": product_company.tag, "date": prices[r].date,"product": product})
                 print("Found price change")
-
-            """for price in prices:
-                #print(last_price.date<price.date)
-                #x.append(mdates.date2num(datetime.date(price.date.year, price.date.month, price.date.day)))
-                x.append(mdates.date2num(price.date))
-                y.append(price.price)
-
-                if last_price.price != price.price:
-                    print("Product: %s \tCompany: %s \tID: %s"%(product.name, session.query(Company).get(product_company.company_id).name, product_company.tag))
-                    print("Price before: %f \tnow: %f \tdate: %s"%(last_price.price, price.price, price.date))
-                    if len(prices) >= 2 and price == prices[-1]:
-                        biggest_changes.append({"percent_change": 1-price.price/last_price.price, "price": price.price, "last_price": last_price.price, "product_name": product.name, "company": session.query(Company).get(product_company.company_id).name, "id": product_company.tag, "date": price.date,"product": product})
-                last_price = price
-            if show_graph: plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
-             #plt.plot([i for i in range(len(y))], y)
-            if show_graph: plt.gcf().autofmt_xdate()
-            if show_graph: myFmt = mdates.DateFormatter('%D')
-            if show_graph: plt.gca().xaxis.set_major_formatter(myFmt)
-            if show_graph: plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-            print(prices[-1].price)
-    if show_graph: plt.show()"""
-    biggest_changes.sort(key=lambda x:x["percent_change"])
+    biggest_changes.sort(key=lambda x: x["percent_change"])
     [print(i) for i in biggest_changes]
-    print("Took %s seconds to query all prices"%(datetime.datetime.now()-started))
+    print("Took %s seconds to query all prices" % (datetime.datetime.now()-started))
     return biggest_changes
 
 def price_analyser_biggest_change_overall(mode = 1, show_graph = False):
@@ -136,14 +130,13 @@ def get_pricegraph(product):
         x = []
         y = []
         for price in prices:
-            #x.append(mdates.date2num(datetime.date(price.date.year, price.date.month, price.date.day)))
             x.append(mdates.date2num(price.date))
             y.append(price.price)
         plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
-         #plt.plot([i for i in range(len(y))], y)
+
         plt.gcf().autofmt_xdate()
-        myFmt = mdates.DateFormatter('%D')
-        plt.gca().xaxis.set_major_formatter(myFmt)
+        my_fmt = mdates.DateFormatter('%D')
+        plt.gca().xaxis.set_major_formatter(my_fmt)
         plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
     plt.show()
 
@@ -179,27 +172,19 @@ def preispiratTest():
     test.uploadProduct(testProduct)
 
 try:
-    engine = create_engine('postgresql://postgres:trackit@localhost:5432/pricetracker_database')
+    engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
     Base.metadata.create_all(engine)
 
     session = sessionmaker(engine)
     session = session()
 
-    #netgear = session.query(Product).filter(Product.manufacturer_id == 'C2P43AE').first()
-    #net = Product(name = 'UE43NU7092', manufacturer='Samsung', manufacturer_id='UE43NU7092UXXH')
-
     digitec = session.query(Company).filter(Company.name == 'Digitec').first()
     microspot = session.query(Company).filter(Company.name == 'Microspot').first()
     conrad = session.query(Company).filter(Company.name == 'Conrad').first()
 
-    #pro_comp = session.query(ProductCompany).filter(ProductCompany.company_id == microspot.id)[0]
-    #net_micro = ProductCompany(tag='1650635', product=netgear, company=conrad)
-
     digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
     microspot_scraper = MicrospotScraper(microspot.url, microspot.scrape_url, microspot.id)
     conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
-
-    #print(digitec_scraper.scrape_price(session.query(ProductCompany).filter(ProductCompany.tag == "10034506").first(), False))
 
     if False:
         failed = []
@@ -212,23 +197,24 @@ try:
 
     #delete_prices_of_day()
 
-    preispiratTest()
-    # res = session.query(Product).filter(Product.manufacturer_id == '1066253').first()
-    #
-    # result = price_analyser_biggest_change(False)
-    # #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
-    # #get_pricegraph(res)
-    # #zero_sum()
-    # #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
-    #
-    # counter = 0
-    # for i in reversed(result):
-    #     if counter > 20: break
-    #     if i['date'].date() != datetime.date.today():
-    #         print("adsfasdf")
-    #         continue
-    #     counter+=1
-    #     get_pricegraph(i['product'])
+    #preispiratTest()
+    result = price_analyser_biggest_change()
+
+    #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
+    #get_pricegraph(res)
+    #zero_sum()
+    #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
+
+    counter = 0
+    for i in reversed(result):
+        if counter > 20: break
+        if i['date'].date() != datetime.date.today():
+            continue
+        counter += 1
+        #get_pricegraph(i['product'])
+        print(i)
+
+    zero_sum()
 
 finally:
     session.commit()

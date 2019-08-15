@@ -13,6 +13,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from scraper import Scraper
 from datastructures import ProductCompany
 
+
 class Preispirat(Scraper):
     def __init__(self):
         Scraper.__init__(self)
@@ -40,9 +41,7 @@ class Preispirat(Scraper):
                 pass
 
         for element in self.driver.find_elements_by_tag_name('button'):
-            #print(element.text, ':')
             try:
-                #if element.text == 'LOGIN':
                 element.click()
                 break
             except:
@@ -53,6 +52,7 @@ class Preispirat(Scraper):
     def uploadProduct(self, product):
         toppreis = self.get_toppreis(product)
         self.enter_info(toppreis)
+        self.driver.find_element_by_name('Deal einsenden').click()
 
     def get_toppreis(self, product):
         print(f'https://www.toppreise.ch/produktsuche?q={product.product.manufacturer_id}')
@@ -78,24 +78,21 @@ class Preispirat(Scraper):
         self.driver.get('https://www.preispirat.ch/dealeinsenden/')
         self.driver.find_element_by_id('wpfepp-form-1-title-field').send_keys(f'{toppreis.product.product.name} bei {toppreis.product.company.name}')
         description = f'{toppreis.product.product.name} ist derzeit bei {toppreis.product.company.name} für nur CHF {toppreis.topprice} erhältlich. Zweitbester Preis ist laut Toppreise.ch CHF {toppreis.secondprice}: {toppreis.url}'
-        #image_url = input("URL to image: ")
-        #image = f'<img class="alignnone size-medium" src="{image_url}" width="465" height="354" data-mce-src="{image_url}">'
         self.driver.find_element_by_id('wpfepp-form-1-content-field-html').click()
         self.driver.find_element_by_id('wpfepp-form-1-content-field').send_keys(description)
         self.driver.find_element_by_id('wpfepp-form-1-rehub_offer_product_url-field').send_keys(toppreis.product.url)
         self.driver.find_element_by_id('wpfepp-form-1-rehub_offer_product_price-field').send_keys(str(toppreis.topprice))
         self.driver.find_element_by_id('wpfepp-form-1-rehub_offer_product_price_old-field').send_keys(str(toppreis.secondprice))
-        self.driver.find_element_by_id('wpfepp-form-1-rehub_offer_coupon_date-field').send_keys(str(datetime.date.today()+ datetime.timedelta(days=2)))
+        self.driver.find_element_by_id('wpfepp-form-1-rehub_offer_coupon_date-field').send_keys(str(datetime.date.today() + datetime.timedelta(days=2)))
         self.driver.find_elements_by_class_name('select2-search__field')[0].send_keys("Elektronik & Unterhaltung ")
         self.driver.find_elements_by_class_name('select2-search__field')[0].send_keys(Keys.ENTER)
         self.driver.find_elements_by_class_name('select2-search__field')[1].send_keys(toppreis.product.company.name)
         self.driver.find_elements_by_class_name('select2-search__field')[1].send_keys(Keys.ENTER)
+        while len(self.driver.find_elements_by_xpath('./div[contains(@class, "cls")]')) < 1:
+            time.sleep(2)
 
 
-        time.sleep(200)
-
-
-class Toppreis():
+class Toppreis:
     def __init__(self, url, topprice, secondprice, product):
         self.url = url
         self.topprice = float(topprice.price)
