@@ -200,6 +200,29 @@ class DigitecScraper(Scraper):
         #    product.prices.append(new_product_price)
         return manufacturer_id
 
+    def scrape_image_product(self, product):
+        if type(product) != ProductCompany:
+            product = self.get_product_company(product)
+
+        soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
+        # print(soup.find_all('script', {'type':'application/ld+json'}))
+        data = None
+        for schema in soup.find_all('script', {'type': 'application/ld+json'}):
+            if 'sku' in json.loads(schema.contents[0]) and json.loads(schema.contents[0])['sku'] == int(product.tag):
+                data = json.loads(schema.contents[0])
+                break
+
+        try:
+            image_url = data['image'][0]
+            product.product.url_image = image_url
+            self.session.commit()
+            print(product.product.url_image)
+            return product.product.url_image
+        except Exception as e:
+            print(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} \
+                    with exception {e}, url: {self.url_product(product)}')
+
+
 class MicrospotScraper(Scraper):
     def scrape_price(self, product, save=False):
         product = super().scrape_price(product)
