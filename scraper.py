@@ -85,6 +85,11 @@ class Scraper():
         return failed
 
     def scrape_by_manufacturer_id(self, product):
+        """
+        Scrapes and adds a new ProductCompany to DB if it's found in shop manufacturer_id
+        :param product: Product
+        :return:
+        """
         pass
 
     def insert_new_product(self, product, with_price=False):
@@ -153,54 +158,68 @@ class DigitecScraper(Scraper):
             raise Exception("Query failed to run by returning code of {}. {}".format(request.status_code, query))
 
     def scrape_tag_category_products(self, category, amount, offset=0):
-        query_tag = 'query GET_TAG_PRODUCTS($tagId: Int!, $sectorId: Int!, $tagIdsFromNavigation: [Int!], $offset: Int, $limit: Int, $sort: ProductSort, $siteId: String) {\n  tag(id: $tagId, sectorId: $sectorId, tagIdsFromNavigation: $tagIdsFromNavigation) {\n    products(offset: $offset, limit: $limit, sort: $sort, siteId: $siteId) {\n      hasMore\n      results {\n        ...Product\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment Product on Product {\n  id\n  productTypeId\n  productTypeName\n  imageUrl\n  imageSet {\n    alternateText\n    source\n    __typename\n  }\n  sectorId\n  name\n  brandId\n  brandName\n  fullName\n  nameProperties\n  productConditionLabel\n  marketingDescription\n  pricing {\n    supplierId\n    secondHandSalesOfferId\n    price {\n      ...VatMoneySum\n      __typename\n    }\n    priceRebateFraction\n    insteadOfPrice {\n      type\n      price {\n        ...VatMoneySum\n        __typename\n      }\n      __typename\n    }\n    offerType\n    __typename\n  }\n  availability {\n    icon\n    mail {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    pickup {\n      title\n      notAllowedText\n      description\n      isAllowed\n      __typename\n    }\n    pickMup {\n      description\n      isAllowed\n      __typename\n    }\n    sites {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    isFloorDeliveryAllowed\n    __typename\n  }\n  energyEfficiency {\n    energyEfficiencyColorType\n    energyEfficiencyLabelText\n    energyEfficiencyLabelSigns\n    energyEfficiencyImageUrl\n    __typename\n  }\n  salesInformation {\n    numberOfItems\n    numberOfItemsSold\n    isLowAmountRemaining\n    __typename\n  }\n  showroomSites\n  rating\n  totalRatings\n  totalQuestions\n  isIncentiveCashback\n  incentiveText\n  isNew\n  isBestseller\n  isProductSet\n  isSalesPromotion\n  isComparable\n  isDeleted\n  isHidden\n  canAddToBasket\n  hidePrice\n  germanNames {\n    germanProductTypeName\n    nameWithoutProperties\n    germanProductNameProperties\n    germanNameWithBrand\n    __typename\n  }\n  productGroups {\n    productGroup1\n    productGroup2\n    productGroup3\n    productGroup4\n    __typename\n  }\n  __typename\n}\n\nfragment VatMoneySum on VatMoneySum {\n  amountIncl\n  amountExcl\n  currency\n  __typename\n}'
+        query_tag = 'query GET_TAG_PRODUCTS($tagId: Int!, $sectorId: Int!, $tagIdsFromNavigation: [Int!], $offset: Int, $limit: Int, $sort: ProductSort, $siteId: String) {\n  tag(id: $tagId, sectorId: $sectorId, tagIdsFromNavigation: $tagIdsFromNavigation) {\n    products(offset: $offset, limit: $limit, sort: $sort, siteId: $siteId) {\n      hasMore\n      results {\n        ...Product\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment Product on Product {\n  id\n  productId\n  productTypeId\n  productTypeName\n  imageUrl\n  imageSet {\n    alternateText\n    source\n    __typename\n  }\n  sectorId\n  name\n  brandId\n  brandName\n  fullName\n  simpleName\n  nameProperties\n  productConditionLabel\n  marketingDescription\n  pricing {\n    supplierId\n    secondHandSalesOfferId\n    price {\n      ...VatMoney\n      __typename\n    }\n    priceRebateFraction\n    insteadOfPrice {\n      type\n      price {\n        ...VatMoneySum\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  availability {\n    icon\n    mail {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    pickup {\n      title\n      notAllowedText\n      description\n      isAllowed\n      __typename\n    }\n    pickMup {\n      description\n      isAllowed\n      __typename\n    }\n    sites {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    isFloorDeliveryAllowed\n    __typename\n  }\n  energyEfficiency {\n    energyEfficiencyColorType\n    energyEfficiencyLabelText\n    energyEfficiencyLabelSigns\n    energyEfficiencyImageUrl\n    __typename\n  }\n  salesInformation {\n    numberOfItems\n    numberOfItemsSold\n    isLowAmountRemaining\n    __typename\n  }\n  showroomSites\n  rating\n  totalRatings\n  totalQuestions\n  isIncentiveCashback\n  incentiveText\n  isNew\n  isBestseller\n  isProductSet\n  isSalesPromotion\n  isComparable\n  isDeleted\n  isHidden\n  canAddToBasket\n  hidePrice\n  germanNames {\n    germanProductTypeName\n    nameWithoutProperties\n    germanProductNameProperties\n    germanNameWithBrand\n    __typename\n  }\n  productGroups {\n    productGroup1\n    productGroup2\n    productGroup3\n    productGroup4\n    __typename\n  }\n  isOtherMandatorProduct\n  __typename\n}\n\nfragment VatMoney on VatMoney {\n  amountIncl\n  amountExcl\n  fraction\n  currency\n  __typename\n}\n\nfragment VatMoneySum on VatMoneySum {\n  amountIncl\n  amountExcl\n  currency\n  __typename\n}'
         variables_tag = { "tagId": category, "sectorId": 1, "tagIdsFromNavigation": [ category ], "offset": offset, "limit": amount, "sort": "BESTSELLER" }
         json_query = {'query': query_tag, 'variables': variables_tag}
-        print("in category")
+
         try:
-            print("before query")
             result = self.run_query_graphql(json_query)
-            print("after query")
-            counter = 0
-            for product in result['data']['tag']['products']['results']:
-                print(self.url_product(product['id']))
-                manufacturer_id = self.scrape_manufacturer_id_url(self.url_product(product['id']))
-
-                if manufacturer_id is None:
-                    continue
-                if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None: #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
-                    print("add %i"%counter)
-                    new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id)
-                    new_product_company = ProductCompany(tag=product['id'], company=self.session.query(Company).get(self.info[2]), product=new_product)
-                    self.session.add_all([new_product, new_product_company])
-                    try:
-                        self.scrape_price(new_product_company, True)
-                        print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
-                    except Exception as e:
-                        print(e)
-                        print("Failed at getting Price of product: %s"%(product['fullName']))
-                else:
-                    print("already in database")
-                counter += 1
-
         except Exception as e:
             print(e)
-            self.session.rollback()
             return None
+
+        counter = 0
+        for product in result['data']['tag']['products']['results']:
+            url = self.url_product(str(product['productId']))
+            manufacturer_id = self.get_manufacturer_id(url)
+            if manufacturer_id is None:
+                continue
+
+            if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None: #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
+                new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id, url_image=product['imageUrl'])
+                new_product_company = ProductCompany(tag=product['productId'], company=self.session.query(Company).get(self.info[2]), product=new_product, url=url)
+                self.session.add_all([new_product, new_product_company])
+                print(f'ADDED {counter} new product to database: Product {new_product.name} with tag: {new_product_company.tag}')
+                """try:
+                    self.scrape_price(new_product_company, True)
+                    print("Name: %s\t Price: %f"%(product['fullName'], product['pricing']['price']['amountIncl']))
+                except Exception as e:
+                    print(e)
+                    print("Failed at getting Price of product: %s"%(product['fullName']))"""
+            else:
+                print(f"NOT ADDED {counter} product: {self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first().name} is already in database!")
+            counter += 1
+
         self.session.commit()
 
-    def scrape_manufacturer_id_url(self, url):
+    def get_manufacturer_id(self, url):
+        """
+        Get manufacturer_id of Product by a passed string to product
+        :param url: string with url to product in shop
+        :return: manufacturer_id of Product
+        """
         soup = bs(r.get(url, headers=self.header).content, 'html.parser')
+
         try:
-            manufacturer_id = soup.find('td', text='Herstellernr.').find_next_sibling("td").text
-        except:
-            return None
-        #if save!= None and save:
-        #    new_product_price = Price(price, datetime.datetime.now())
-        #    product.prices.append(new_product_price)
-        return manufacturer_id
+            data = json.loads(soup.find('script', {'id' : '__NEXT_DATA__', 'type': 'application/json'}).text)
+            if 'props' in data:
+                for spec in data['props']['pageProps']["productDetailsData"]["specifications"]:
+                    if 'title' in spec and spec['title'] == 'Allgemeine Informationen':
+                        for prop in spec["properties"]:
+                            if 'name' in prop and prop['name'] == "Herstellernr.":
+                                manufacturer_id = prop['values'][0]['value']
+                                return manufacturer_id
+        except Exception as e:
+            print(e)
+            print(KeyError("No manufacturer_id found"))
+        return None
 
     def scrape_image_product(self, product):
+        """
+        Scrapes image from Digitec servers and saves url in Product
+        :param product: Product
+        :return:
+        """
         if type(product) != ProductCompany:
             product = self.get_product_company(product)
 
@@ -258,6 +277,7 @@ class MicrospotScraper(Scraper):
             print(e)
             return None
 
+
 class ConradScraper(Scraper):
     def scrape_price(self, product, save=False):
         product = super().scrape_price(product)
@@ -278,18 +298,87 @@ class ConradScraper(Scraper):
     def url_product(self, product):
         return self.info[1] + product.tag
 
+
+class PCOstschweizScraper(Scraper):
+    def scrape_price(self, product, save=False):
+        product = super().scrape_price(product)
+
+        headers = {
+            'Accept-Encoding' : 'gzip, deflate, br',
+            'Content-Type' : 'application/x-www-form-urlencoded'
+        }
+
+        data = {
+            'strType' : 'cart',
+            'query' : f'pro:{product.tag};qnt:1;mth:add;',
+            'rnd' : '0.15344249824532108'
+        }
+
+        xml = r.get(url=self.info[1], headers=headers, params=data)
+        soup = bs(xml.text, 'html.parser')
+
+        price = float(soup.find('sumcrt').text)
+
+        if save and price > 0.0:
+            new_product_price = Price(price, datetime.datetime.now())
+            product.prices.append(new_product_price)
+
+        return price
+
+    def scrape_by_manufacturer_id(self, product, save=False):
+        if isinstance(product, ProductCompany):
+            product = self.session.query(Product).get(product.product_id)
+        product = self.session.query(Product).get(product.id)
+        data = {'T': 'srch', 'suche': product.manufacturer_id}
+
+        try:
+            result = r.get(url='https://www.pc-ostschweiz.ch/de/Products.htm', headers=self.header, params=data)
+
+            if  re.search(r'2a(\d+).htm', result.url) != None: # makes sure we actually got redirected to a specific product
+                tag = re.search(r'2a(\d+).htm', result.url).group(1)
+
+                if save:
+                    if self.session.query(ProductCompany).filter(ProductCompany.product == product,
+                                                             ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id).first() is None:
+                        new_product_company = ProductCompany(tag = tag,
+                                                             company = self.session.query(Company).get(self.info[2]),
+                                                             product = product, url=result.url)
+                        self.session.add(new_product_company)
+                        self.session.commit()
+                    self.scrape_price(product = product, save = True)
+                    self.session.commit()
+
+                print(f'Found {product.name} for pcostschweiz with tag {tag}')
+                return tag
+            else:
+                raise KeyError(f'Nothing found for product: {product.name} manufacturer_id: {product.manufacturer_id}')
+        except Exception as e:
+            print(e)
+            return None
+
 if __name__ == '__main__':
-    """if response.history:
-        print("Request was redirected")
-        for resp in response.history:
-            print(resp.status_code, resp.url)
-        print("Final destination:")
-        print(response.status_code, response.url)
-    else:
-        print("Request was not redirected")"""
-    digitec = DigitecScraper('https://www.digitec.ch/', 'https://www.digitec.ch/de/s1/product/')
-    print(digitec.scrape_price(1))
-    conrad = ConradScraper('https://www.conrad.ch/', 'https://www.conrad.ch/de/')
-    print(conrad.scrape_price(1))
-    microspot = MicrospotScraper('https://www.microspot.ch/', 'https://www.microspot.ch/mspocc/occ/msp/products/')
-    print(microspot.scrape_price(1))
+    engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
+    Base.metadata.create_all(engine)
+
+    session = sessionmaker(engine)
+    session = session()
+
+
+
+    #digitec = session.query(Company).filter(Company.name == 'Digitec').first()
+    #digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
+
+    #digitec_scraper.scrape_tag_category_products(520, 100, 0)
+    #digitec_scraper.scrape_tag_category_products(591, 100, 0)
+    #digitec_scraper.scrape_tag_category_products(521, 100, 0)
+    #digitec_scraper.scrape_tag_category_products(678, 100, 0)
+
+
+
+"""
+520 Fotografie
+1 Gaming
+591 Audio
+521 Smartwatch Wearables
+678 Büromaterial
+"""

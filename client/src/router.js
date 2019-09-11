@@ -11,11 +11,6 @@ export default new Router({
   base: process.env.BASE_URL,
   routes: [
     {
-      path: '/ping',
-      name: 'Ping',
-      component: Ping,
-    },
-    {
       path: '/',
       name: 'Prices',
       component: Prices,

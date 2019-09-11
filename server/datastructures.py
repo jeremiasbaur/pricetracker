@@ -89,6 +89,8 @@ class Price(Base):
 
     product_company_id = Column(Integer, ForeignKey('product_company.id'))
 
+    #price_changes = relationship("PriceChanges")
+
     def __init__(self, price=None, date=None):
         self.price = price
         self.date = date
@@ -104,10 +106,10 @@ class PriceChanges(Base):
     #product_company = relationship(Price, back_populates='product_company')
 
     price_today_id = Column(Integer, ForeignKey('price.id'))
-    #price_today = relationship(Price, back_populates='price') # backlinking
+    #price_today = relationship(Price, foreign_keys=[price_today_id]) # backlinking
 
     price_yesterday_id = Column(Integer, ForeignKey('price.id'))
-    #price_yesterday = relationship(Price, back_populates='price') # backlinking
+    #price_yesterday = relationship(Price, foreign_keys=[price_yesterday_id]) # backlinking
 
     def __init__(self,  date = None, product_company_id = None, price_today_id = None, price_yesterday_id = None, percent_change = None):
         #self.percent_change = price_today.price/price_yesterday.price

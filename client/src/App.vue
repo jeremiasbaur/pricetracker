@@ -1,8 +1,9 @@
 <template>
-  <div id="app">
-
-    <router-view/>
-  </div>
+  <main role="main" class="container">
+    <div id="app">
+      <router-view/>
+    </div>
+  </main>
 </template>
 
 <style>

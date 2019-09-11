@@ -1,11 +1,11 @@
-import jsonpickle, json, datetime
+import json, datetime
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges, AlchemyEncoder
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker, aliased
 from sqlalchemy import and_, create_engine
 
 # configuration
@@ -25,50 +25,27 @@ Base.metadata.create_all(engine)
 session = sessionmaker(engine)
 session = session()
 
-BOOKS = [
-    {
-        'title': 'On the Road',
-        'author': 'Jack Kerouac',
-        'read': True
-    },
-    {
-        'title': 'Harry Potter and the Philosopher\'s Stone',
-        'author': 'J. K. Rowling',
-        'read': False
-    },
-    {
-        'title': 'Green Eggs and Ham',
-        'author': 'Dr. Seuss',
-        'read': True
-    }
-]
-
-# sanity check route
-@app.route('/ping', methods=['GET'])
-def ping_pong():
-    return jsonify('pong!')
-
 @app.route('/prices', methods=['GET'])
 def prices():
-    started = datetime.datetime.now()
-    query = session.query(PriceChanges, ProductCompany, Product, Price)\
-        .filter(and_(PriceChanges.date > datetime.datetime.today()-datetime.timedelta(days=1),\
-                     PriceChanges.product_company_id == ProductCompany.id,\
-                     Product.id == ProductCompany.product_id,\
-                     PriceChanges.price_yesterday_id == Price.id))\
-        .order_by(PriceChanges.percent_change.desc()).all()
-    print(datetime.datetime.now()-started)
-    started = datetime.datetime.now()
-    #query = session.query(PriceChanges)\
-    #    .filter(and_(PriceChanges.date < datetime.datetime.today(), PriceChanges.date > datetime.datetime.today()-datetime.timedelta(days=1)))\
-    #    .order_by(PriceChanges.percent_change.desc()).all()
+    last_price_change = session.query(PriceChanges).order_by(PriceChanges.date.desc()).first()
+
+    p_alias = aliased(Price)
+    delta = datetime.timedelta(days=1)
+
+    if(last_price_change.date < datetime.datetime.today()-delta):
+        delta = datetime.timedelta(days=2)
+
+    query = session.query(PriceChanges, ProductCompany, Product, Price, p_alias).\
+                filter(PriceChanges.date > datetime.datetime.today()-delta).\
+                join(ProductCompany, PriceChanges.product_company_id == ProductCompany.id).\
+                join(Product, ProductCompany.product_id == Product.id).\
+                join(Price, PriceChanges.price_yesterday_id == Price.id).\
+                join(p_alias, PriceChanges.price_today_id == p_alias.id).order_by(PriceChanges.percent_change.desc()).all()
+
     response_object = {'status': 'success'}
     response_object['prices'] = query
 
-    print(json.dumps(query[1], cls=AlchemyEncoder))
-    lol = json.dumps(response_object, cls=AlchemyEncoder)
-    print(datetime.datetime.now()-started)
-    return lol
+    return json.dumps(response_object, cls=AlchemyEncoder)
 
 @app.route('/books', methods=['GET', 'POST'])
 def all_books():
@@ -84,7 +61,6 @@ def all_books():
     else:
         response_object['books'] = BOOKS
     return jsonify(response_object)
-
 
 if __name__ == '__main__':
     app.run()
