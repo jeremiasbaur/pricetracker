@@ -1,28 +1,10 @@
 from scraper import *
-from datastructures import *
+from datastructures import Product, ProductCompany, Price, Company, PriceChanges
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from preispirat import Preispirat
-
-from dateutil import parser
-
-#print(digitec_scraper.scrape_price(netgear, True))
-
-#print(digitec_scraper.scrape_manufacturer_id(session.query(ProductCompany).filter(ProductCompany.product_id==netgear.id).first()))
-
-#tinte_digitec = session.query(ProductCompany).filter(ProductCompany.tag == '3230182').first()
-
-#samsung = Product(name='Extreme 128GB', manufacturer='Sandisk', manufacturer_id='SDSQXA1-128G-GN6MA')
-#session.add_all([ProductCompany(tag='6304953', product=netgear, company= digitec), ProductCompany(tag='0001485727', product=netgear, company= microspot)])
-#session.add(samsung)
-#digitec_scraper.scrape_by_manufacturer_tag(samsung)
-
-#digitec_scraper.scrape_tag_category_products(1123, 1000, 0)
-
-#print(microspot_scraper.scrape_by_manufacturer_id(netgear, save=True))
-#print(microspot_scraper.scrape_price(netgear, save=True))
 
 def binary_search(prices, value):
     """
@@ -64,7 +46,7 @@ def price_analyser_biggest_change():
                 continue
 
             if prices[r].price != prices[r-1].price:
-                biggest_changes.append({"percent_change": 1-prices[r].price/prices[r-1].price, "price": prices[r].price, "last_price": prices[r-1].price, "product_name": product.name, "company": session.query(Company).get(product_company.company_id).name, "id": product_company.tag, "date": prices[r].date,"product": product})
+                biggest_changes.append({"percent_change": 1-prices[r].price/prices[r-1].price, "price": prices[r].price, "last_price": prices[r-1].price, "product_name": product.name, "company": session.query(Company).get(product_company.company_id).name, "id": product_company.tag, "date": prices[r].date,"product": product, "product_company": product_company, "price_today": prices[r].id, "price_yesterday": prices[r-1].id})
                 print("Found price change")
     biggest_changes.sort(key=lambda x: x["percent_change"])
     [print(i) for i in biggest_changes]
@@ -119,6 +101,11 @@ def price_analyser_biggest_change_overall(mode = 1, show_graph = False):
     print("Took %s seconds to query all prices"%(datetime.datetime.now()-started))
     return biggest_changes
 
+def scrape_images():
+    for product in session.query(Product).all():
+        product.url_image = digitec_scraper.scrape_image_product(product)
+        print(product.url_image)
+
 def get_pricegraph(product):
     plt.figure(product.id)
     plt.suptitle(product.name)
@@ -160,16 +147,25 @@ def delete_prices_of_day():
             print(price.id, price.date, price.date.date() == datetime.date.today())
             session.delete(price)
 
-def preispiratTest():
+def preispiratTest(testProduct):
     lol = datetime.datetime.now()
-    print(lol)
-    testProduct = session.query(ProductCompany).join(Product).join(Company).filter(and_(Product.manufacturer_id == 'DELL-U2718Q', Company.name == 'Digitec')).first()
+    #testProduct = session.query(ProductCompany).join(Product).join(Company).filter(and_(Product.manufacturer_id == 'DELL-U2718Q', Company.name == 'Digitec')).first()
     #print(digitec_scraper.get_latest_price(testProduct))
-    print(testProduct.product.name, testProduct.company.name)
-    print(datetime.datetime.now()-lol)
-    testProduct.url = 'https://www.digitec.ch/de/s1/product/dell-ultrasharp-u2718q-27-3840-x-2160-pixels-monitor-6412351'
+    #testProduct.url = 'https://www.digitec.ch/de/s1/product/dell-ultrasharp-u2718q-27-3840-x-2160-pixels-monitor-6412351'
     test = Preispirat()
     test.uploadProduct(testProduct)
+
+def url_to_product():
+    for product_company in digitec.stock:
+        product_company.url = digitec_scraper.url_product(product_company)
+    for product_company in microspot.stock:
+        product_company.url = 'https://www.microspot.ch/msp/products/' + product_company.tag
+    for product_company in conrad.stock:
+        product_company.url = conrad_scraper.url_product(product_company)
+
+def scrape_products():
+    for product in session.query(Product).all():
+        pcostschweiz_scraper.scrape_by_manufacturer_id(product, True)
 
 try:
     engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
@@ -181,13 +177,19 @@ try:
     digitec = session.query(Company).filter(Company.name == 'Digitec').first()
     microspot = session.query(Company).filter(Company.name == 'Microspot').first()
     conrad = session.query(Company).filter(Company.name == 'Conrad').first()
+    pcostschweiz = session.query(Company).filter(Company.name == 'PCOstschweiz').first()
 
     digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
     microspot_scraper = MicrospotScraper(microspot.url, microspot.scrape_url, microspot.id)
     conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
+    pcostschweiz_scraper = PCOstschweizScraper(pcostschweiz.url, pcostschweiz.scrape_url, pcostschweiz.id)
 
-    if False:
+    #scrape_products()
+
+    if True:
         failed = []
+        failed.extend(pcostschweiz_scraper.scrape_for_day())
+        print(failed)
         failed.extend(digitec_scraper.scrape_for_day())
         print(failed)
         failed.extend(microspot_scraper.scrape_for_day())
@@ -198,6 +200,11 @@ try:
     #delete_prices_of_day()
 
     #preispiratTest()
+
+    #digitec_scraper.scrape_tag_category_products(591, 1000, 0)
+
+    #scrape_images()
+
     result = price_analyser_biggest_change()
 
     #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
@@ -205,60 +212,26 @@ try:
     #zero_sum()
     #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
 
+    #url_to_product()
+
     counter = 0
     for i in reversed(result):
-        if counter > 20: break
+        if counter > 100: break
         if i['date'].date() != datetime.date.today():
             continue
         counter += 1
+        if(True and len(session.query(Price).filter(Price.id == i['price_today']).all()) == 1 and len(session.query(Price).filter(Price.id == i['price_yesterday']).all())==1):
+            test = PriceChanges(date=datetime.datetime.today(), price_today_id=i['price_today'], price_yesterday_id=i['price_yesterday'], percent_change=i['percent_change']+1, product_company_id= i['product_company'].id)
+            session.add(test)
+            session.commit()
         #get_pricegraph(i['product'])
         print(i)
+        #preispiratTest(i['product_company'])
 
-    zero_sum()
+    #zero_sum()
 
 finally:
     session.commit()
     session.close()
     Scraper.driver.quit()
 
-"""
-error products:
-LX50 (Over-Ear, Schwarz) Microspot
-G12IG 19V1 (Intel Core i7-8700, 16GB, SSD, HDD) Microspot
-G9IG 19V1 (Intel Core i5-8400, 8GB, SSD, HDD) Microspot
-G12AR 19V1 (AMD Ryzen 7 2700X, 16GB, SSD, HDD) Microspot
-M9 (2GB, Schwarz) Microspot
-0001345833 Microspot
-0001713855 Microspot
-0001703185 Microspot
-0001054911 Microspot
-0001725909 Microspot
-
-6843426 digitec
-6191539 digitec
-10133029 digitec
-8218823 digitec
-8985094 digitec
-7033103 digitec
-9632782 digitec
-5627781 digitec
-6333008 digitec
-6982815 digitec
-9623754 digitec
-6190303 digitec
-8810945 digitec
-2452586 digitec
-10369198 digitec
-10450681 digitec
-8182687 digitec
-8218823 digitec
-8985094 digitec
-10125597 digitec
-6427502 digitec
-6972334 digitec
-3229667 digitec
-5341475 digitec
-6399709 digitec
-235363 digitec
-
-"""
