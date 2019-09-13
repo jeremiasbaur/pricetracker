@@ -167,6 +167,19 @@ def scrape_products():
     for product in session.query(Product).all():
         pcostschweiz_scraper.scrape_by_manufacturer_id(product, True)
 
+def add_day_price_changes(price_change_dict):
+    product_companies = session.query(ProductCompany).get(price_change_dict['product_company']).product.product_offered
+
+    today = datetime.datetime(datetime.datetime.today().year, datetime.datetime.today().month,
+                              datetime.datetime.today().day)
+
+    test = PriceChanges(date=datetime.datetime.today(),
+                        price_today_id=price_change_dict['price_today'],
+                        price_yesterday_id=price_change_dict['price_yesterday'],
+                        percent_change=price_change_dict['percent_change'] + 1,
+                        product_company_id=price_change_dict['product_company'].id)
+
+
 try:
     engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
     Base.metadata.create_all(engine)
@@ -220,8 +233,12 @@ try:
         if i['date'].date() != datetime.date.today():
             continue
         counter += 1
-        if(True and len(session.query(Price).filter(Price.id == i['price_today']).all()) == 1 and len(session.query(Price).filter(Price.id == i['price_yesterday']).all())==1):
-            test = PriceChanges(date=datetime.datetime.today(), price_today_id=i['price_today'], price_yesterday_id=i['price_yesterday'], percent_change=i['percent_change']+1, product_company_id= i['product_company'].id)
+        if True:
+            test = PriceChanges(date=datetime.datetime.today(),
+                                price_today_id=i['price_today'],
+                                price_yesterday_id=i['price_yesterday'],
+                                percent_change=i['percent_change']+1,
+                                product_company_id= i['product_company'].id)
             session.add(test)
             session.commit()
         #get_pricegraph(i['product'])

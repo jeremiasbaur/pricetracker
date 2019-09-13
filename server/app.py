@@ -31,12 +31,13 @@ def prices():
 
     p_alias = aliased(Price)
     delta = datetime.timedelta(days=1)
+    today = datetime.datetime(datetime.datetime.today().year, datetime.datetime.today().month, datetime.datetime.today().day)
 
     if(last_price_change.date < datetime.datetime.today()-delta):
         delta = datetime.timedelta(days=2)
 
     query = session.query(PriceChanges, ProductCompany, Product, Price, p_alias).\
-                filter(PriceChanges.date > datetime.datetime.today()-delta).\
+                filter(PriceChanges.date >= today).\
                 join(ProductCompany, PriceChanges.product_company_id == ProductCompany.id).\
                 join(Product, ProductCompany.product_id == Product.id).\
                 join(Price, PriceChanges.price_yesterday_id == Price.id).\

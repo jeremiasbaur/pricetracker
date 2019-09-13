@@ -64,8 +64,8 @@ class Scraper():
 
     def scrape_for_day(self):
         """
-        Scrapes all prices of company and saves it in database
-        :return: Returns failed products to filter them out for future analysis
+        Scrapes all prices of Company and saves it in database
+        :return: Returns failed Product id's to filter them out for future analysis
         """
         failed = []
         counter = 0
@@ -73,20 +73,19 @@ class Scraper():
             try:
                 self.scrape_price(product, save=True)
             except Exception as e:
-                print(f"Failed at product {product.tag} \
-                        with name {self.session.query(Product).get(product.product_id).manufacturer} \
-                        {self.session.query(Product).get(product.product_id).name} of company \
-                        {self.session.query(Company).get(self.info[2]).name}")
-                failed.append(self.session.query(Product).get(product.product_id))
+                print(f'''Failed at product: {product.tag}
+                        with name: {product.product.manufacturer}
+                        {product.product.name} of company:
+                        {product.company.name} with error: {e}''')
+                failed.append(product.product.id)
             counter += 1
-            print('Updated %d products for company %s' % (counter, self.session.query(Company).get(self.info[2]).name))
-            # time.sleep(0.4)
+            print(f'Updated {counter} products for company {product.company.name}')
         self.session.commit()
         return failed
 
     def scrape_by_manufacturer_id(self, product):
         """
-        Scrapes and adds a new ProductCompany to DB if it's found in shop manufacturer_id
+        Scrapes and adds a new ProductCompany to DB if it's found for Company
         :param product: Product
         :return:
         """
@@ -150,7 +149,7 @@ class DigitecScraper(Scraper):
         except:
             return None
 
-    def run_query_graphql(self, query): # query = {'query': query_enter_search, 'variables': variables_enter_search}
+    def run_query_graphql(self, query):  # query = {'query': query_enter_search, 'variables': variables_enter_search}
         request = r.post('https://www.digitec.ch/api/graphql', json=query, headers=self.header)
         if request.status_code == 200:
             return request.json()
@@ -175,7 +174,7 @@ class DigitecScraper(Scraper):
             if manufacturer_id is None:
                 continue
 
-            if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None: #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
+            if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None:  #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
                 new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id, url_image=product['imageUrl'])
                 new_product_company = ProductCompany(tag=product['productId'], company=self.session.query(Company).get(self.info[2]), product=new_product, url=url)
                 self.session.add_all([new_product, new_product_company])
@@ -201,7 +200,7 @@ class DigitecScraper(Scraper):
         soup = bs(r.get(url, headers=self.header).content, 'html.parser')
 
         try:
-            data = json.loads(soup.find('script', {'id' : '__NEXT_DATA__', 'type': 'application/json'}).text)
+            data = json.loads(soup.find('script', {'id': '__NEXT_DATA__', 'type': 'application/json'}).text)
             if 'props' in data:
                 for spec in data['props']['pageProps']["productDetailsData"]["specifications"]:
                     if 'title' in spec and spec['title'] == 'Allgemeine Informationen':
@@ -245,7 +244,7 @@ class DigitecScraper(Scraper):
 class MicrospotScraper(Scraper):
     def scrape_price(self, product, save=False):
         product = super().scrape_price(product)
-        data = r.get(self.url_product(product), headers = self.header).json()
+        data = r.get(self.url_product(product), headers=self.header).json()
         price = data['price']['value']
 
         if save!= None and save:
@@ -267,10 +266,12 @@ class MicrospotScraper(Scraper):
             if True or len(result['products']) == 1:
                 if save:
                     if self.session.query(ProductCompany).filter(and_(ProductCompany.product_id == product.id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() is None:
-                        new_product_company = ProductCompany(tag=result['products'][0]['code'], company=self.session.query(Company).get(self.info[2]), product= product)
+                        new_product_company = ProductCompany(tag=result['products'][0]['code'],
+                                                             company=self.session.query(Company).get(self.info[2]),
+                                                             product=product)
                         self.session.add(new_product_company)
                         self.session.commit()
-                        self.scrape_price(product = product, save = True)
+                        self.scrape_price(product=product, save=True)
                         self.session.commit()
                 return result['products'][0]['code']
         except Exception as e:
@@ -319,7 +320,10 @@ class PCOstschweizScraper(Scraper):
 
         price = float(soup.find('sumcrt').text)
 
-        if save and price > 0.0:
+        if price <= 0.0:
+            raise ValueError(f"Product {product.product.name} not available at {product.company.name} anymore")
+
+        if save:
             new_product_price = Price(price, datetime.datetime.now())
             product.prices.append(new_product_price)
 
