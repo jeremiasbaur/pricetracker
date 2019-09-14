@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import and_
 
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support.expected_conditions import presence_of_element_located
 from selenium.webdriver.support.ui import Select
@@ -13,6 +14,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 
+options = Options()
+options.headless = True
 geckodriver_path = r'.\Website\geckodriver-v0.24.0-win64\geckodriver.exe'
 
 import json, time, re
@@ -26,7 +29,7 @@ class Scraper():
 
     header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
 
-    driver = webdriver.Firefox(executable_path=geckodriver_path)
+    driver = webdriver.Firefox(executable_path=geckodriver_path, options=options)
     wait = WebDriverWait(driver, 20)
 
     def __init__(self, website_url=None, scrape_base_url=None, id=None):
@@ -367,15 +370,16 @@ if __name__ == '__main__':
     session = sessionmaker(engine)
     session = session()
 
-
-
-    #digitec = session.query(Company).filter(Company.name == 'Digitec').first()
-    #digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
+    digitec = session.query(Company).filter(Company.name == 'Digitec').first()
+    digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
 
     #digitec_scraper.scrape_tag_category_products(520, 100, 0)
     #digitec_scraper.scrape_tag_category_products(591, 100, 0)
     #digitec_scraper.scrape_tag_category_products(521, 100, 0)
-    #digitec_scraper.scrape_tag_category_products(678, 100, 0)
+    digitec_scraper.scrape_tag_category_products(1123, 300, 0)
+    digitec_scraper.scrape_tag_category_products(7, 300, 0)
+    digitec_scraper.scrape_tag_category_products(615, 300, 0)
+    digitec_scraper.scrape_tag_category_products(1249, 300, 0)
 
 
 
@@ -385,4 +389,8 @@ if __name__ == '__main__':
 591 Audio
 521 Smartwatch Wearables
 678 Büromaterial
+1123 Drohnen
+7 Netzwerk
+615 PC Server
+1249 Haushalt
 """

@@ -1,5 +1,9 @@
-from scraper import *
+from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -110,7 +114,7 @@ def get_pricegraph(product):
     plt.figure(product.id)
     plt.suptitle(product.name)
     for product_company in product.product_offered:
-        prices = product_company.prices
+        prices = session.query(Price).filter(Price.product_company_id == product_company.id).order_by(asc(Price.date)).all()
 
         if len(prices) == 0:
             continue
@@ -120,7 +124,6 @@ def get_pricegraph(product):
             x.append(mdates.date2num(price.date))
             y.append(price.price)
         plt.plot(x, y, label=session.query(Company).get(product_company.company_id).name)
-
         plt.gcf().autofmt_xdate()
         my_fmt = mdates.DateFormatter('%D')
         plt.gca().xaxis.set_major_formatter(my_fmt)
@@ -181,6 +184,7 @@ def add_day_price_changes(price_change_dict):
 
 
 try:
+    Base = declarative_base()
     engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
     Base.metadata.create_all(engine)
 
