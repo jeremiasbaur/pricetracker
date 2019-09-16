@@ -1,0 +1,35 @@
+version: '3'
+services:
+    backend:
+      image: pricetracker_backend
+      build:
+        context: ./
+        dockerfile: backend.dockerfile
+      ports:
+        - "5000:5000"
+      volumes:
+        - ./server:/app/server
+      depends_on:
+        - db 
+      restart: always
+    db:
+      image: pricetracker_db
+      build:
+        context: ./
+        dockerfile: db.dockerfile
+      environment:
+          - POSTGRES_USER=postgres
+          - POSTGRES_PASSWORD=admin
+      ports:
+          - "5432:5432"
+    frontend:
+      image: pricetracker_frontend
+      build:
+        context: ./
+        dockerfile: frontend.dockerfile
+      ports:
+        - "8080:8080"
+      volumes:
+        - ./client/src:/app/src
+      depends_on:
+        - backend

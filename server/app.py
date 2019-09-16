@@ -31,7 +31,7 @@ def prices():
 
     p_alias = aliased(Price)
     delta = datetime.timedelta(days=1)
-    today = datetime.datetime(datetime.datetime.today().year, datetime.datetime.today().month, datetime.datetime.today().day)
+    today = datetime.datetime(last_price_change.date.year, last_price_change.date.month, last_price_change.date.day)
 
     if(last_price_change.date < datetime.datetime.today()-delta):
         delta = datetime.timedelta(days=2)

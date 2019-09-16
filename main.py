@@ -1,3 +1,5 @@
+import datetime
+
 from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges
 
