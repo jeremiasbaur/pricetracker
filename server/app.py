@@ -9,7 +9,7 @@ from sqlalchemy.orm import relationship, sessionmaker, aliased
 from sqlalchemy import and_, create_engine
 
 # configuration
-DEBUG = True
+DEBUG = False
 
 # instantiate the app
 app = Flask(__name__)
@@ -19,7 +19,7 @@ app.config.from_object(__name__)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
 Base = declarative_base()
-engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
+engine = create_engine('postgres://hdlubjhvpibagw:68fde9cba5c79eeca8eba0c52528f095ca1ffb912c12095104ce03809b8f2939@ec2-54-247-178-166.eu-west-1.compute.amazonaws.com:5432/d3p7ql5olgpc0j')
 Base.metadata.create_all(engine)
 
 session = sessionmaker(engine)

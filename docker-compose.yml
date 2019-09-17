@@ -29,7 +29,5 @@ services:
         dockerfile: frontend.dockerfile
       ports:
         - "8080:8080"
-      volumes:
-        - ./client/src:/app/src
       depends_on:
         - backend

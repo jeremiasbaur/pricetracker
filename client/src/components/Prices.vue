@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     getPrices() {
-      const path = 'http://localhost:5000/prices';
+      const path = '/prices';
       axios.get(path)
         .then((res) => {
           console.log(res);

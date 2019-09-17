@@ -8,8 +8,7 @@ COPY ./client/package*.json ./
 
 RUN npm install
 
-COPY /client /app/
+COPY /client ./
 
-#RUN vue add bootstrap-vue
-
+RUN npm audit fix --force
 CMD ["npm", "run", "serve"]
