@@ -2,7 +2,7 @@ import json, datetime
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from datastructures import Product, ProductCompany, Price, Company, PriceChanges, AlchemyEncoder
+from datastructures import Product, ProductCompany, Price, Company, PriceChanges, PriceChangesSimple, BaseSimple, AlchemyEncoder
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker, aliased
@@ -18,15 +18,27 @@ app.config.from_object(__name__)
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-Base = declarative_base()
 engine = create_engine('postgres://hdlubjhvpibagw:68fde9cba5c79eeca8eba0c52528f095ca1ffb912c12095104ce03809b8f2939@ec2-54-247-178-166.eu-west-1.compute.amazonaws.com:5432/d3p7ql5olgpc0j')
-Base.metadata.create_all(engine)
+BaseSimple.metadata.create_all(engine)
 
-session = sessionmaker(engine)
-session = session()
+Session = sessionmaker()
+session = Session(bind=engine)
 
 @app.route('/prices', methods=['GET'])
 def prices():
+    last_price_change = session.query(PriceChangesSimple).order_by(PriceChangesSimple.date.desc()).first()
+
+    today = datetime.datetime(last_price_change.date.year, last_price_change.date.month, last_price_change.date.day)
+
+    query = session.query(PriceChangesSimple).\
+                filter(PriceChangesSimple.date >= today).all()
+
+    response_object = {'status': 'success'}
+    response_object['prices'] = query
+
+    return json.dumps(response_object, cls=AlchemyEncoder)
+
+"""def prices_adv():
     last_price_change = session.query(PriceChanges).order_by(PriceChanges.date.desc()).first()
 
     p_alias = aliased(Price)
@@ -46,8 +58,7 @@ def prices():
     response_object = {'status': 'success'}
     response_object['prices'] = query
 
-    return json.dumps(response_object, cls=AlchemyEncoder)
-
+    return json.dumps(response_object, cls=AlchemyEncoder)"""
 
 if __name__ == '__main__':
     try:

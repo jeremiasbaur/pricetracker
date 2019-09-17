@@ -14,7 +14,7 @@ html, body{
   //color: #FFFFFF;
 }
 #app {
-  margin-top: 60px;
+  margin-top: 5vmin;
   display: block;
   margin-right: auto;
   margin-left: auto;

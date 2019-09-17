@@ -1,11 +1,11 @@
 <template>
     <div class="card h-100 c">
-      <img v-bind:src="pricedrops[2].url_image" class="card-img-top">
+      <img v-bind:src="pricedrops.product_url_image" class="card-img-top">
       <div class="mt-auto card-body d-flex flex-column">
-        <h5 class="card-title">{{pricedrops[2].manufacturer}} {{pricedrops[2].name}}</h5>
-        <p class="card-text percent">{{pricedrops[4].price}} CHF statt <del>{{pricedrops[3].price}} CHF</del><br>{{ -Math.round((pricedrops[0].percent_change-1)*1000)/10 }}% Rabatt!</p>
-        <a v-bind:href="pricedrops[1].url" target="_blank" class="mt-auto btn btn-primary text-truncate">Deal anschauen!</a>
-        <a v-bind:href="topPreise(pricedrops[2].manufacturer_id)" target="_blank" class="text-center text-secondary" style="padding: 0.2rem 0px 0px 0px;">Toppreise Vergleich</a>
+        <h5 class="card-title">{{pricedrops.product_manufacturer}} {{pricedrops.product_name}}</h5>
+        <p class="card-text percent">{{pricedrops.price_today}} CHF statt <del>{{pricedrops.price_yesterday}} CHF</del><br>{{ -Math.round((pricedrops.percent_change-1)*1000)/10 }}% Rabatt!</p>
+        <a v-bind:href="pricedrops.product_company_url" target="_blank" class="mt-auto btn btn-primary text-truncate">PriceDrop anschauen!</a>
+        <a v-bind:href="topPreise(pricedrops.product_tag)" target="_blank" class="text-center text-secondary" style="padding: 0.2rem 0px 0px 0px;">Toppreise Vergleich</a>
       </div>
     </div>
 </template>

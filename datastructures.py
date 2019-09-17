@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, create_engine, Float, asc
+from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, Float, asc
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship, sessionmaker
 import datetime, json
@@ -14,6 +14,7 @@ import datetime, json
 # https://wiki-bsse.ethz.ch/display/ITDOC/Copy+PostgreSQL+database+between+computers
 
 Base = declarative_base()
+BaseSimple = declarative_base()
 
 class Storage(Base):
     __tablename__ = 'storage'
@@ -117,6 +118,40 @@ class PriceChanges(Base):
         self.price_yesterday_id = price_yesterday_id
         self.product_company_id = product_company_id
         self.percent_change = percent_change
+
+        if date is None:
+            self.date = datetime.datetime.now()
+        else:
+            self.date = date
+
+
+class PriceChangesSimple(BaseSimple):
+    __tablename__ = 'price_changes'
+    id = Column('id', Integer, primary_key=True)
+
+    date = Column(DateTime, nullable=False)
+    percent_change = Column(Float, nullable=False)
+
+    product_company_url = Column(String)
+    product_manufacturer = Column(String)
+    product_name = Column(String)
+    product_tag = Column(String)
+    product_url_image = Column(String)
+
+    price_today = Column(Float)
+    price_yesterday = Column(Float)
+
+    def __init__(self,  date = None, product_company = None, product = None, price_today = None, price_yesterday = None):
+        #self.percent_change = price_today.price/price_yesterday.price
+        self.price_today = price_today.price
+        self.price_yesterday = price_yesterday.price
+        self.product_company_url = product_company.url
+        self.percent_change = 2 - self.price_today / self.price_yesterday
+
+        self.product_name = product.name
+        self.product_manufacturer = product.manufacturer
+        self.product_tag = product.manufacturer_id
+        self.product_url_image = product.url_image
 
         if date is None:
             self.date = datetime.datetime.now()

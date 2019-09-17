@@ -1,7 +1,8 @@
 import datetime
+import multiprocessing
 
 from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
-from datastructures import Product, ProductCompany, Price, Company, PriceChanges
+from datastructures import Product, ProductCompany, Price, Company, PriceChanges, PriceChangesSimple,Base, BaseSimple
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -184,77 +185,99 @@ def add_day_price_changes(price_change_dict):
                         percent_change=price_change_dict['percent_change'] + 1,
                         product_company_id=price_change_dict['product_company'].id)
 
+def PriceChangeToSimple(price_change):
+    if not isinstance(price_change, PriceChanges):
+        raise TypeError()
+    price_change_simple = PriceChangesSimple(product_company=session.query(ProductCompany).get(price_change.product_company_id),
+                                                price_today=session.query(Price).get(price_change.price_today_id),
+                                                price_yesterday=session.query(Price).get(price_change.price_yesterday_id),
+                                                product=session.query(ProductCompany).get(price_change.product_company_id).product
+                                                )
+    return price_change_simple
 
-try:
-    Base = declarative_base()
-    engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
-    Base.metadata.create_all(engine)
+if __name__ == "__main__":
+    try:
+        engine = create_engine('postgresql://postgres:admin@localhost:5432/pricetracker_database')
+        Base.metadata.create_all(engine)
+        Session = sessionmaker()
+        session = Session(bind=engine)
 
-    session = sessionmaker(engine)
-    session = session()
+        engine_simple = create_engine('postgres://hdlubjhvpibagw:68fde9cba5c79eeca8eba0c52528f095ca1ffb912c12095104ce03809b8f2939@ec2-54-247-178-166.eu-west-1.compute.amazonaws.com:5432/d3p7ql5olgpc0j')
+        BaseSimple.metadata.create_all(engine_simple)
+        session_simple = Session(bind=engine_simple)
 
-    digitec = session.query(Company).filter(Company.name == 'Digitec').first()
-    microspot = session.query(Company).filter(Company.name == 'Microspot').first()
-    conrad = session.query(Company).filter(Company.name == 'Conrad').first()
-    pcostschweiz = session.query(Company).filter(Company.name == 'PCOstschweiz').first()
+        digitec = session.query(Company).filter(Company.name == 'Digitec').first()
+        microspot = session.query(Company).filter(Company.name == 'Microspot').first()
+        conrad = session.query(Company).filter(Company.name == 'Conrad').first()
+        pcostschweiz = session.query(Company).filter(Company.name == 'PCOstschweiz').first()
 
-    digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
-    microspot_scraper = MicrospotScraper(microspot.url, microspot.scrape_url, microspot.id)
-    conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
-    pcostschweiz_scraper = PCOstschweizScraper(pcostschweiz.url, pcostschweiz.scrape_url, pcostschweiz.id)
+        digitec_scraper = DigitecScraper(digitec.url, digitec.scrape_url, digitec.id)
+        microspot_scraper = MicrospotScraper(microspot.url, microspot.scrape_url, microspot.id)
+        conrad_scraper = ConradScraper(conrad.url, conrad.scrape_url, conrad.id)
+        pcostschweiz_scraper = PCOstschweizScraper(pcostschweiz.url, pcostschweiz.scrape_url, pcostschweiz.id)
 
-    #scrape_products()
+        #scrape_products()
 
-    if True:
-        failed = []
-        failed.extend(pcostschweiz_scraper.scrape_for_day())
-        print(failed)
-        failed.extend(digitec_scraper.scrape_for_day())
-        print(failed)
-        failed.extend(microspot_scraper.scrape_for_day())
-        print(failed)
-        failed.extend(conrad_scraper.scrape_for_day())
-        pass
+        if False:
+            #failed = []
+            #failed.extend(pcostschweiz_scraper.scrape_for_day())
+            #failed.extend(digitec_scraper.scrape_for_day())
+            #failed.extend(microspot_scraper.scrape_for_day())
+            #failed.extend(conrad_scraper.scrape_for_day())
 
-    #delete_prices_of_day()
+            #freeze_support()
+            pcostschweiz_thread = multiprocessing.Process(target=pcostschweiz_scraper.scrape_for_day, name="PCOstschweiz Process")
+            digitec_thread = multiprocessing.Process(target=digitec_scraper.scrape_for_day, name="Digitec Process")
+            microspot_thread = multiprocessing.Process(target=microspot_scraper.scrape_for_day, name="Microspot Process")
+            conrad_thread = multiprocessing.Process(target=conrad_scraper.scrape_for_day, name="Conrad Process")
 
-    #preispiratTest()
+            processes = [pcostschweiz_thread, digitec_thread, microspot_thread, conrad_thread]
 
-    #digitec_scraper.scrape_tag_category_products(591, 1000, 0)
+            [process.start() for process in processes]
+            [process.join() for process in processes]
 
-    #scrape_images()
+        #delete_prices_of_day()
 
-    result = price_analyser_biggest_change()
+        #preispiratTest()
 
-    #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
-    #get_pricegraph(res)
-    #zero_sum()
-    #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
+        #digitec_scraper.scrape_tag_category_products(591, 1000, 0)
 
-    #url_to_product()
+        #scrape_images()
 
-    counter = 0
-    for i in reversed(result):
-        if counter > 100: break
-        if i['date'].date() != datetime.date.today():
-            continue
-        counter += 1
-        if True:
-            test = PriceChanges(date=datetime.datetime.today(),
-                                price_today_id=i['price_today'],
-                                price_yesterday_id=i['price_yesterday'],
-                                percent_change=i['percent_change']+1,
-                                product_company_id= i['product_company'].id)
-            session.add(test)
-            session.commit()
-        #get_pricegraph(i['product'])
-        print(i)
-        #preispiratTest(i['product_company'])
+        result = price_analyser_biggest_change()
 
-    #zero_sum()
+        #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
+        #get_pricegraph(res)
+        #zero_sum()
+        #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
 
-finally:
-    session.commit()
-    session.close()
-    Scraper.driver.quit()
+        #url_to_product()
 
+        counter = 0
+        for i in reversed(result):
+            if counter > 100: break
+            if i['date'].date() != datetime.date.today():
+                continue
+            counter += 1
+            if True:
+                test = PriceChanges(date=datetime.datetime.today(),
+                                    price_today_id=i['price_today'],
+                                    price_yesterday_id=i['price_yesterday'],
+                                    percent_change=i['percent_change']+1,
+                                    product_company_id= i['product_company'].id)
+                #session.add(test)
+                #session_simple.add(PriceChangeToSimple(test))
+            #get_pricegraph(i['product'])
+            print(i)
+            #preispiratTest(i['product_company'])
+
+        print(session_simple.query(PriceChangesSimple).all())
+
+        #zero_sum()
+
+    finally:
+        session.commit()
+        session_simple.commit()
+        session.close()
+        session_simple.close()
+        Scraper.driver.quit()
