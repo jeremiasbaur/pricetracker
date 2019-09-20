@@ -31,7 +31,7 @@ def prices():
     today = datetime.datetime(last_price_change.date.year, last_price_change.date.month, last_price_change.date.day)
 
     query = session.query(PriceChangesSimple).\
-                filter(PriceChangesSimple.date >= today).all()
+                filter(PriceChangesSimple.date >= today).order_by(PriceChangesSimple.percent_change.desc()).all()
 
     response_object = {'status': 'success'}
     response_object['prices'] = query

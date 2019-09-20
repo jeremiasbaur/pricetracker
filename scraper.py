@@ -317,7 +317,8 @@ class PCOstschweizScraper(Scraper):
             'rnd' : '0.15344249824532108'
         }
 
-        xml = r.get(url=self.info[1], headers=headers, params=data)
+        cookies = r.get(url=product.url).cookies
+        xml = r.get(url=self.info[1], headers=headers, params=data, cookies=cookies)
         soup = bs(xml.text, 'html.parser')
 
         price = float(soup.find('sumcrt').text)

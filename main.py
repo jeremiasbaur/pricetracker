@@ -218,14 +218,7 @@ if __name__ == "__main__":
 
         #scrape_products()
 
-        if False:
-            #failed = []
-            #failed.extend(pcostschweiz_scraper.scrape_for_day())
-            #failed.extend(digitec_scraper.scrape_for_day())
-            #failed.extend(microspot_scraper.scrape_for_day())
-            #failed.extend(conrad_scraper.scrape_for_day())
-
-            #freeze_support()
+        if True:
             pcostschweiz_thread = multiprocessing.Process(target=pcostschweiz_scraper.scrape_for_day, name="PCOstschweiz Process")
             digitec_thread = multiprocessing.Process(target=digitec_scraper.scrape_for_day, name="Digitec Process")
             microspot_thread = multiprocessing.Process(target=microspot_scraper.scrape_for_day, name="Microspot Process")
@@ -235,6 +228,9 @@ if __name__ == "__main__":
 
             [process.start() for process in processes]
             [process.join() for process in processes]
+
+            #results = session_simple.query(PriceChangesSimple).all()
+            #[session_simple.delete(x) for x in results]
 
         #delete_prices_of_day()
 
@@ -265,13 +261,11 @@ if __name__ == "__main__":
                                     price_yesterday_id=i['price_yesterday'],
                                     percent_change=i['percent_change']+1,
                                     product_company_id= i['product_company'].id)
-                #session.add(test)
-                #session_simple.add(PriceChangeToSimple(test))
+                session.add(test)
+                session_simple.add(PriceChangeToSimple(test))
             #get_pricegraph(i['product'])
             print(i)
             #preispiratTest(i['product_company'])
-
-        print(session_simple.query(PriceChangesSimple).all())
 
         #zero_sum()
 
