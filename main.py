@@ -4,7 +4,7 @@ import multiprocessing
 from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges, PriceChangesSimple,Base, BaseSimple
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 

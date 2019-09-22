@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup as bs
+import traceback
 import requests as r
 from datastructures import *
 from sqlalchemy import create_engine
@@ -110,17 +111,18 @@ class Scraper():
 
 class DigitecScraper(Scraper):
     def scrape_price(self, product, save=False):
-        product = super().scrape_price(product)
-        soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
-        # print(soup.find_all('script', {'type':'application/ld+json'}))
-        data = None
-        for schema in soup.find_all('script', {'type': 'application/ld+json'}):
-            if 'sku' in json.loads(schema.contents[0]) and json.loads(schema.contents[0])['sku'] == int(product.tag):
-                data = json.loads(schema.contents[0])
-                break
-
         try:
-            price = data['offers']['lowPrice']
+            product = super().scrape_price(product)
+            soup = bs(r.get(self.url_product(product), headers=self.header).content, 'html.parser')
+            #print(soup.find_all('script', {'type':'application/ld+json'}))
+            data = None
+            for schema in soup.find_all('script', {'type': 'application/ld+json'}):
+                if 'sku' in json.loads(schema.contents[0]) and str(json.loads(schema.contents[0])['sku']) == product.tag:
+                    data = json.loads(schema.contents[0])
+                    break
+
+            price = min(data['offers']['lowPrice'], data['offers']['highPrice'])
+
         except Exception as e:
             print(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} \
                     with exception {e}, url: {self.url_product(product)}')
@@ -140,7 +142,7 @@ class DigitecScraper(Scraper):
         if isinstance(product, ProductCompany):
             product = self.session.query(Product).get(product.product_id)
         query_enter_search = 'query ENTER_SEARCH($query: String!, $sortOrder: ProductSort, $productTypeIds: [Int!], $brandIds: [Int!], $limit: Int = 9, $offset: Int = 0) {\n  search(query: $query, productTypeIds: $productTypeIds, brandIds: $brandIds) {\n    products(limit: $limit, offset: $offset, sortOrder: $sortOrder) {\n      total\n      hasMore\n      results {\n        ...Product\n        __typename\n      }\n      __typename\n    }\n    productTypeFilters {\n      id\n      name\n      productCount\n      __typename\n    }\n    brandFilters {\n      id\n      name\n      resultCount\n      __typename\n    }\n    help(limit: $limit, offset: $offset) {\n      total\n      results {\n        id\n        title\n        url\n        __typename\n      }\n      __typename\n    }\n    discussions(limit: $limit, offset: $offset) {\n      total\n      results {\n        ...CommunityDiscussionScored\n        __typename\n      }\n      __typename\n    }\n    questions(limit: $limit, offset: $offset) {\n      total\n      results {\n        ...CommunityQuestionScored\n        __typename\n      }\n      __typename\n    }\n    ratings(limit: $limit, offset: $offset) {\n      total\n      results {\n        ...CommunityRatingScored\n        __typename\n      }\n      __typename\n    }\n    brands(limit: $limit, offset: $offset) {\n      total\n      results {\n        id\n        title\n        __typename\n      }\n      __typename\n    }\n    magazinePages(limit: $limit, offset: $offset) {\n      total\n      hasMore\n      results {\n        ...MagazinePageScored\n        __typename\n      }\n      __typename\n    }\n    productTypes(limit: $limit, offset: $offset) {\n      total\n      results {\n        id\n        name\n        __typename\n      }\n      __typename\n    }\n    tags(limit: $limit, offset: $offset) {\n      total\n      results {\n        id\n        title\n        __typename\n      }\n      __typename\n    }\n    suggestion {\n      name\n      doRedirect\n      hasResults\n      __typename\n    }\n    authors(limit: $limit, offset: $offset) {\n      total\n      results {\n        ...AuthorScored\n        __typename\n      }\n      __typename\n    }\n    redirection\n    otherPortalSuggestion {\n      numberOfFoundProducts\n      portalName\n      url\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment Product on Product {\n  id\n  productTypeId\n  productTypeName\n  imageUrl\n  imageSet {\n    alternateText\n    source\n    __typename\n  }\n  sectorId\n  name\n  brandId\n  brandName\n  fullName\n  nameProperties\n  productConditionLabel\n  marketingDescription\n  pricing {\n    supplierId\n    secondHandSalesOfferId\n    price {\n      ...VatMoneySum\n      __typename\n    }\n    priceRebateFraction\n    insteadOfPrice {\n      type\n      price {\n        ...VatMoneySum\n        __typename\n      }\n      __typename\n    }\n    offerType\n    __typename\n  }\n  availability {\n    icon\n    mail {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    pickup {\n      title\n      notAllowedText\n      description\n      isAllowed\n      __typename\n    }\n    pickMup {\n      description\n      isAllowed\n      __typename\n    }\n    sites {\n      siteId\n      title\n      type\n      icon\n      text\n      description\n      tooltipDescription\n      numberOfItems\n      deliveryDate\n      __typename\n    }\n    isFloorDeliveryAllowed\n    __typename\n  }\n  energyEfficiency {\n    energyEfficiencyColorType\n    energyEfficiencyLabelText\n    energyEfficiencyLabelSigns\n    energyEfficiencyImageUrl\n    __typename\n  }\n  salesInformation {\n    numberOfItems\n    numberOfItemsSold\n    isLowAmountRemaining\n    __typename\n  }\n  showroomSites\n  rating\n  totalRatings\n  totalQuestions\n  isIncentiveCashback\n  incentiveText\n  isNew\n  isBestseller\n  isProductSet\n  isSalesPromotion\n  isComparable\n  isDeleted\n  isHidden\n  canAddToBasket\n  hidePrice\n  germanNames {\n    germanProductTypeName\n    nameWithoutProperties\n    germanProductNameProperties\n    germanNameWithBrand\n    __typename\n  }\n  productGroups {\n    productGroup1\n    productGroup2\n    productGroup3\n    productGroup4\n    __typename\n  }\n  __typename\n}\n\nfragment CommunityDiscussionScored on CommunityDiscussionSearchResultItem {\n  __typename\n  item {\n    ...CommunityDiscussion\n    __typename\n  }\n  searchScore\n}\n\nfragment CommunityQuestionScored on CommunityQuestionSearchResultItem {\n  __typename\n  item {\n    ...CommunityQuestion\n    __typename\n  }\n  searchScore\n}\n\nfragment CommunityRatingScored on CommunityRatingSearchResultItem {\n  __typename\n  item {\n    ...CommunityRating\n    __typename\n  }\n  searchScore\n}\n\nfragment MagazinePageScored on MagazinePagesSearchResultItem {\n  __typename\n  item {\n    ...MarketingTeaserData\n    __typename\n  }\n  searchScore\n}\n\nfragment AuthorScored on AuthorSearchResultItem {\n  __typename\n  item {\n    ...Author\n    __typename\n  }\n  searchScore\n}\n\nfragment VatMoneySum on VatMoneySum {\n  amountIncl\n  amountExcl\n  currency\n  __typename\n}\n\nfragment CommunityDiscussion on CommunityDiscussion {\n  id\n  discussionId\n  discussionEntryId\n  text\n  userId\n  insertDate\n  deleteDate\n  lastEditDate\n  upVoteCount\n  downVoteCount\n  abusiveVoteCount\n  voteScore\n  gamificationUser {\n    ...GamificationUserItem\n    __typename\n  }\n  title\n  lastActivityDate\n  numberOfAnswers\n  activeUserIds\n  numberOfFollowers\n  contextType\n  contextId\n  contextName\n  defaultSectorId\n  defaultTagIds\n  __typename\n}\n\nfragment CommunityQuestion on CommunityQuestion {\n  id\n  questionId\n  productId\n  text\n  userId\n  isEmployeeQuestion\n  insertDate\n  lastActivityDate\n  upVoteCount\n  downVoteCount\n  abusiveVoteCount\n  voteScore\n  numberOfAnswers\n  activeUserIds\n  acceptedAnswerIds\n  answerIds\n  hasAcceptedAnswers\n  gamificationUser {\n    ...GamificationUserItem\n    __typename\n  }\n  product {\n    ...CommunityProductLink\n    __typename\n  }\n  __typename\n}\n\nfragment CommunityRating on CommunityRating {\n  id\n  ratingId\n  title\n  text\n  rating\n  userId\n  insertDate\n  deleteDate\n  lastActivityDate\n  upVoteCount\n  downVoteCount\n  abusiveVoteCount\n  voteScore\n  numberOfComments\n  productId\n  activeUserIds\n  product {\n    ...CommunityProductLink\n    __typename\n  }\n  gamificationUser {\n    ...GamificationUserItem\n    __typename\n  }\n  __typename\n}\n\nfragment MarketingTeaserData on MarketingTeaserData {\n  id\n  marketingTeaserPerformanceId\n  marketingPageId\n  recommendationExplanation\n  imageUrl\n  title\n  topic\n  category\n  tagId\n  teaserLink\n  hasVideo\n  __typename\n}\n\nfragment Author on Author {\n  authorUserId\n  authorName\n  imageLink\n  authorDescription\n  jobDescription\n  authorLocation\n  __typename\n}\n\nfragment GamificationUserItem on GamificationUserItem {\n  id\n  userId\n  rank\n  level\n  activity\n  totalPointsWithDelimiter\n  achievementIcons\n  portalId\n  mandatorId\n  memberSinceDate\n  numberOfOtherAchievements\n  hasLimitedProfileView\n  userName\n  userProfileLink\n  userAvatarLink\n  userImageColorHexCode\n  isEmployee\n  employeeJobTitle\n  __typename\n}\n\nfragment CommunityProductLink on Product {\n  id\n  productTypeName\n  imageUrl\n  sectorId\n  name\n  brandName\n  fullName\n  pricing {\n    supplierId\n    secondHandSalesOfferId\n    __typename\n  }\n  __typename\n}'
-        variables_enter_search = { "limit": 200, "offset": 0, "query": product.manufacturer_id }
+        variables_enter_search = {"limit": 200, "offset": 0, "query": product.manufacturer_id}
         json_query = {'query': query_enter_search, 'variables': variables_enter_search}
 
         try:
@@ -176,7 +178,7 @@ class DigitecScraper(Scraper):
             if manufacturer_id is None:
                 continue
 
-            if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None:  #and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
+            if self.session.query(Product).filter(Product.manufacturer_id == manufacturer_id).first() is None:  # and self.session.query(ProductCompany).filter(and_(ProductCompany.product.manufacturer_id == manufacturer_id, ProductCompany.company_id == self.session.query(Company).get(self.info[2]).id)).first() == None:
                 new_product = Product(name=product['name'], manufacturer=product['brandName'], manufacturer_id=manufacturer_id, url_image=product['imageUrl'])
                 new_product_company = ProductCompany(tag=product['productId'], company=self.session.query(Company).get(self.info[2]), product=new_product, url=url)
                 self.session.add_all([new_product, new_product_company])
@@ -249,7 +251,7 @@ class MicrospotScraper(Scraper):
         data = r.get(self.url_product(product), headers=self.header).json()
         price = data['price']['value']
 
-        if save!= None and save:
+        if save is not None and save:
             new_product_price = Price(price, datetime.datetime.now())
             product.prices.append(new_product_price)
 
