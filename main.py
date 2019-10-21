@@ -4,9 +4,8 @@ import multiprocessing
 from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges, PriceChangesSimple,Base, BaseSimple
 
-from sqlalchemy import create_engine, asc
+from sqlalchemy import create_engine, asc, Index
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -174,16 +173,35 @@ def scrape_products():
         pcostschweiz_scraper.scrape_by_manufacturer_id(product, True)
 
 def add_day_price_changes(price_change_dict):
-    product_companies = session.query(ProductCompany).get(price_change_dict['product_company']).product.product_offered
+    product_companies = session.query(ProductCompany)\
+                        .join(Product)\
+                        .distinct(ProductCompany.id)\
+                        .filter(Product.id == price_change_dict['product_company'].product_id).all()
 
-    today = datetime.datetime(datetime.datetime.today().year, datetime.datetime.today().month,
-                              datetime.datetime.today().day)
+    other_best_price = -1
 
-    test = PriceChanges(date=datetime.datetime.today(),
-                        price_today_id=price_change_dict['price_today'],
-                        price_yesterday_id=price_change_dict['price_yesterday'],
-                        percent_change=price_change_dict['percent_change'] + 1,
-                        product_company_id=price_change_dict['product_company'].id)
+    for pc in product_companies:
+        if pc.id is not price_change_dict['product_company'].id:
+            pc_price = session.query(Price) \
+                .filter(Price.product_company_id == pc.id) \
+                .order_by(Price.date.desc()) \
+                .first()
+
+            if isinstance(other_best_price, int) or pc_price.price < other_best_price.price:
+                other_best_price = pc_price
+
+    if isinstance(other_best_price, int) or other_best_price.price > price_change_dict['price']:
+        if isinstance(other_best_price, int) or other_best_price.price > price_change_dict['last_price']:
+            other_best_price = price_change_dict['price_yesterday']
+
+        pc = PriceChanges(date=datetime.datetime.today(),
+                            price_today_id=price_change_dict['price_today'],
+                            price_yesterday_id=(other_best_price if isinstance(other_best_price, int) else other_best_price.id),
+                            percent_change=(2 - price_change_dict['price']/other_best_price.price if not isinstance(other_best_price, int) else price_change_dict['percent_change'] + 1),
+                            product_company_id=price_change_dict['product_company'].id)
+        return pc
+    else:
+        return None
 
 def PriceChangeToSimple(price_change):
     if not isinstance(price_change, PriceChanges):
@@ -249,23 +267,28 @@ if __name__ == "__main__":
 
         #url_to_product()
 
-        counter = 0
+        new_changes = list()
         for i in reversed(result):
-            if counter > 100: break
+            if i['percent_change'] < 0:
+                break
             if i['date'].date() != datetime.date.today():
                 continue
-            counter += 1
             if True:
-                test = PriceChanges(date=datetime.datetime.today(),
-                                    price_today_id=i['price_today'],
-                                    price_yesterday_id=i['price_yesterday'],
-                                    percent_change=i['percent_change']+1,
-                                    product_company_id= i['product_company'].id)
-                session.add(test)
-                session_simple.add(PriceChangeToSimple(test))
-            #get_pricegraph(i['product'])
-            print(i)
-            #preispiratTest(i['product_company'])
+                change = add_day_price_changes(i)
+                if change is not None:
+                    print(i)
+                    new_changes.append(change)
+
+        counter = 0
+        for change in sorted(new_changes, key=lambda x: x.percent_change, reverse=True):
+            if counter < 100:
+                print(change.percent_change)
+                session_simple.add(PriceChangeToSimple(change))
+                session.add(change)
+                #get_pricegraph(i['product'])
+                #preispiratTest(i['product_company'])
+            else:
+                break
 
         #zero_sum()
 

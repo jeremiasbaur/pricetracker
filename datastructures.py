@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, Float, asc
+from sqlalchemy import Column, DateTime, String, Integer, ForeignKey, Float, asc, Index
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship, sessionmaker
 import datetime, json
@@ -91,6 +91,8 @@ class Price(Base):
     product_company_id = Column(Integer, ForeignKey('product_company.id'))
 
     #price_changes = relationship("PriceChanges")
+
+    Index('price_date_index', date, product_company_id, unique=True)
 
     def __init__(self, price=None, date=None):
         self.price = price

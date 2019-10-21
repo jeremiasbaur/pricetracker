@@ -27,7 +27,7 @@ class Scraper():
     session = sessionmaker(engine)
     session = session()
 
-    header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+    header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36'}
 
     driver = webdriver.Firefox(executable_path=geckodriver_path, options=options)
     wait = WebDriverWait(driver, 20)
