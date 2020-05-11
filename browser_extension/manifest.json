@@ -1,0 +1,31 @@
+{
+	"manifest_version": 2,
+	"name": "PriceDrop",
+	"version": "0.1",
+	"description": "Tracks prices all over Swiss online shops to find the cheapest offering",
+	"homepage_url": "https://jeremiasbaur.com",
+	"icons": {
+		"32": "icons/favicon.ico"
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"*://*.digitec.ch/*"
+			],
+			"js": [
+				"pricechecker.js"
+			]
+		}
+	],
+	"permissions": [
+		"*://*.digitec.ch/*",
+		"tabs",
+		"activeTab",
+		"webRequest"
+	],
+	"browser_action": {
+		"default_icon": "icons/favicon.ico",
+		"default_title": "PriceDrop",
+		"default_popup": "popup/popup.html"
+	}
+}
