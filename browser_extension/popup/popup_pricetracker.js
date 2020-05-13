@@ -1,4 +1,4 @@
-var API = chrome || browser;
+//var browser = chrome || browser;
 /**
  * CSS to hide everything on the page,
  * except for elements that have the "beastify-image" class.
@@ -12,7 +12,6 @@ const hidePage = `body > :not(.beastify-image) {
  * the content script in the page.
  */
 function listenForClicks() {
-	console.log("click");
   document.addEventListener("click", (e) => {
 	/**
      * Given the name of a beast, get the URL to the corresponding image.
@@ -20,11 +19,11 @@ function listenForClicks() {
     function beastNameToURL(beastName) {
       switch (beastName) {
         case "Frog":
-          return API.extension.getURL("beasts/frog.jpg");
+          return browser.extension.getURL("beasts/frog.jpg");
         case "Snake":
-          return API.extension.getURL("beasts/snake.jpg");
+          return browser.extension.getURL("beasts/snake.jpg");
         case "Turtle":
-          return API.extension.getURL("beasts/turtle.jpg");
+          return browser.extension.getURL("beasts/turtle.jpg");
       }
     }
 
@@ -34,9 +33,9 @@ function listenForClicks() {
      * send a "beastify" message to the content script in the active tab.
      */
     function beastify(tabs) {
-      API.tabs.insertCSS({code: hidePage}).then(() => {
+      browser.tabs.insertCSS({code: hidePage}).then(() => {
         let url = beastNameToURL(e.target.textContent);
-        API.tabs.sendMessage(tabs[0].id, {
+        browser.tabs.sendMessage(tabs[0].id, {
           command: "beastify",
           beastURL: url
         });
@@ -48,8 +47,8 @@ function listenForClicks() {
      * send a "reset" message to the content script in the active tab.
      */
     function reset(tabs) {
-      API.tabs.removeCSS({code: hidePage}).then(() => {
-        API.tabs.sendMessage(tabs[0].id, {
+      browser.tabs.removeCSS({code: hidePage}).then(() => {
+        browser.tabs.sendMessage(tabs[0].id, {
           command: "reset",
         });
       });
@@ -62,34 +61,10 @@ function listenForClicks() {
       console.error(`Could not beastify: ${error}`);
     }
 	
-	function getPrice(){
-		var scripts = document.querySelectorAll('script[type="application/ld+json"]');
-
-		var current_url = window.location.href;
-		console.log(current_url)
-		
-		//let re = /(\d+)(?!.*\d)/;
-		//var product_str = re.exec(current_url)[0];
-
-
-		var price = null;
-		var arrayLength = scripts.length;
-		for (var i = 0; i < arrayLength; i++) {
-			var json = JSON.parse(scripts[i].text);
-			
-			if (json.sku != null && current_url.includes(json.sku)){
-				price = Math.min(json.offers.highPrice, json.offers.lowPrice);
-				break;
-			}
-		}
-
-		if (price != null){
-			console.log("success");
-			console.log(price);
-		} else{
-			console.log("failed");
-		}
-		return price;
+	function getPrice(tabs){
+		browser.tabs.sendMessage(tabs[0].id, {
+          command: "getPrice"
+        });
 	}
 
     /**
@@ -97,19 +72,23 @@ function listenForClicks() {
      * then call "beastify()" or "reset()" as appropriate.
      */
     if (e.target.classList.contains("beast")) {
-      API.tabs.query({active: true, currentWindow: true})
+      browser.tabs.query({active: true, currentWindow: true})
         .then(beastify)
         .catch(reportError);
     }
     else if (e.target.classList.contains("reset")) {
-      API.tabs.query({active: true, currentWindow: true})
+      browser.tabs.query({active: true, currentWindow: true})
         .then(reset)
         .catch(reportError);
     }
 	
 	else if (e.target.classList.contains("price")) {
-		document.querySelector("#price").text = "Price: " + getPrice();
-    }
+		browser.tabs.query({active: true, currentWindow: true})
+        .then(getPrice);
+		
+    } else if(e.target.href!==undefined){
+		chrome.tabs.create({url:e.target.href})
+	}
 	
   });
 }
@@ -129,7 +108,40 @@ function reportExecuteScriptError(error) {
  * and add a click handler.
  * If we couldn't inject the script, handle the error.
  */
-API.tabs.executeScript({file: "/content_scripts/pricetracker.js"});
-listenForClicks();
-//.then(listenForClicks)
-//.catch(reportExecuteScriptError);
+browser.tabs.executeScript({file: "../browser-polyfill.js"});
+browser.tabs.executeScript({file: "/content_scripts/pricetracker.js"})
+.then(listenForClicks)
+.catch(reportExecuteScriptError);
+
+function setPrice(price_info){
+	console.log("here");
+	document.querySelector("#price").innerHTML = "Price: " + price_info.price;
+	document.querySelector("#product_id").innerHTML = "Product ID: " + price_info.product_id;
+	
+	var response;
+	getPriceAPI('digitec', price_info.product_id, 0).then(data => {
+		document.querySelector("#top_price").innerHTML = "Top Price: " + data.top_price;
+		document.querySelector("#top_price_shop").innerHTML = "Top Shop: " + data.shop;
+		
+		document.querySelector("#topurl").setAttribute('href', data.url);
+	});	
+}
+
+async function getPriceAPI(shop, product_id, type) 
+{	
+	console.log(`http://localhost:5000/api/v1/prices/${shop}/${product_id}/${type}`);
+  let response = await fetch(`http://localhost:5000/api/v1/prices/${shop}/${product_id}/${type}`);
+  let data = await response.json()
+  return data;
+}
+
+// communication from content script
+
+function handleMessage(request){
+	if (request.price){
+		setPrice({price: request.price, product_id: request.product_id});
+	}
+	console.log(request);
+}
+
+browser.runtime.onMessage.addListener(handleMessage);

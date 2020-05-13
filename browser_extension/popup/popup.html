@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 
 <html>
-  <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="popup_pricetracker.css"/>
-  </head>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="popup_pricetracker.css" />
+        <link rel="stylesheet" href="../bootstrap/css/bootstrap.css" />
+    </head>
 
-<body>
-  <div id="popup-content">
-    <div class="button price">Load</div>
-	<div class="price" id="price">Price:</div>
-    
-	</div>
-  <div id="error-content" class="hidden">
-    <p>Can't beastify this web page.</p><p>Try a different page.</p>
-  </div>
-  <script src="popup_pricetracker.js"></script>
-</body>
+    <body>
+        <div class="card text-center">
+            <div class="card-header h5">
+                PriceDrop
+            </div>
+            <div class="card-body">
+                <p class="card-text" id="price">Price:</p>
+                <p class="card-text" id="product_id">Product ID:</p>
+                <div class="btn btn-success price button">Check</div>
+				<p class="card-text" id="top_price">loading..</p>
+				<p class="card-text" id="top_price_shop">loading..</p>
+            </div>
+            <div class="card-footer text-muted">
+                <a id="topurl" href="#">Anschauen</a>
+            </div>
+        </div>
 
+        <script type="application/javascript" src="../browser-polyfill.js"></script>
+        <script src="popup_pricetracker.js"></script>
+    </body>
 </html>

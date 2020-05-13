@@ -7,12 +7,18 @@
 	"icons": {
 		"32": "icons/favicon.ico"
 	},
+	"background": {
+		"scripts": [
+			"browser-polyfill.js"
+		]
+	},
 	"content_scripts": [
 		{
 			"matches": [
 				"*://*.digitec.ch/*"
 			],
 			"js": [
+				"browser-polyfill.js",
 				"pricechecker.js"
 			]
 		}
