@@ -1,6 +1,8 @@
 import datetime
 import multiprocessing
 
+from collections import OrderedDict
+
 from scraper import Scraper, DigitecScraper, MicrospotScraper, ConradScraper, PCOstschweizScraper
 from datastructures import Product, ProductCompany, Price, Company, PriceChanges, PriceChangesSimple,Base, BaseSimple
 
@@ -134,6 +136,17 @@ def get_pricegraph(product):
 
 def zero_sum(timeframe = [0,0]):
     #parser.parse('', dayfirst=True)
+    start_day = session.query(Price).order_by(Price.date.asc()).first()
+    end_day = session.query(Price).order_by(Price.date.desc()).first()
+
+    date_dict = OrderedDict()
+    for day in range((end_day.date - start_day.date + datetime.timedelta(days=1)).days):
+        day = start_day.date + day*datetime.timedelta(days=1)
+        sum_dict = {}
+        for company in session.query(Company):
+            sum_dict[company.name] = 0
+        date_dict[datetime.datetime(day=day.day, year=day.year, month=day.month)] = sum_dict
+
     for company in session.query(Company):
         sum = 0
         for product_company in session.query(ProductCompany).filter(ProductCompany.company == company):
@@ -143,7 +156,28 @@ def zero_sum(timeframe = [0,0]):
                 if price.price / last_price != 1:
                     sum += price.price - last_price
                     last_price = price.price
+
+                try:
+                    date_dict[datetime.datetime(day=price.date.day, year=price.date.year, month=price.date.month)][company.name] = sum
+                except:
+                    pass
+        x = []
+        y = []
+        for date, sum_dict in date_dict.items():
+            x.append(mdates.date2num(date))
+            y.append(sum_dict[company.name])
+
+        plt.plot(x, y, label=company.name)
+        plt.gcf().autofmt_xdate()
+        my_fmt = mdates.DateFormatter('%D')
+        plt.gca().xaxis.set_major_formatter(my_fmt)
+        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+
+        plt.show()
+
         print("Sum of company %s : %f"%(company.name, sum))
+        print(date_dict)
+    plt.show()
 
 def delete_prices_of_day():
     print(datetime.date.today())
@@ -190,7 +224,8 @@ def add_day_price_changes(price_change_dict):
             if isinstance(other_best_price, int) or pc_price.price < other_best_price.price:
                 other_best_price = pc_price
 
-    if isinstance(other_best_price, int) or other_best_price.price > price_change_dict['price']:
+
+    if other_best_price is not None and (isinstance(other_best_price, int) or other_best_price.price > price_change_dict['price']):
         if isinstance(other_best_price, int) or other_best_price.price > price_change_dict['last_price']:
             other_best_price = price_change_dict['price_yesterday']
 
@@ -258,7 +293,6 @@ if __name__ == "__main__":
 
         #scrape_images()
 
-        result = price_analyser_biggest_change()
 
         #result = price_analyser_biggest_change_overall(0) # 0 sort for absolute change, 1 sort for percent change
         #get_pricegraph(res)
@@ -266,6 +300,9 @@ if __name__ == "__main__":
         #print(digitec_scraper.get_toppreise(session.query(Product).filter(Product.manufacturer_id=='DELL-U2718Q').first()))
 
         #url_to_product()
+
+
+        result = price_analyser_biggest_change()
 
         new_changes = list()
         for i in reversed(result):
@@ -289,6 +326,7 @@ if __name__ == "__main__":
                 #preispiratTest(i['product_company'])
             else:
                 break
+            counter+=1
 
         #zero_sum()
 

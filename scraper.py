@@ -72,7 +72,8 @@ class Scraper():
         """
         failed = []
         counter = 0
-        for product in self.session.query(ProductCompany).filter(ProductCompany.company_id == self.info[2]):
+        query = self.session.query(ProductCompany).filter(ProductCompany.company_id == self.info[2])
+        for product in query:
             try:
                 self.scrape_price(product, save=True)
             except Exception as e:
@@ -82,7 +83,7 @@ class Scraper():
                         {product.company.name} with error: {e}''')
                 failed.append(product.product.id)
             counter += 1
-            print(f'Updated {counter} products for company {product.company.name}')
+            print(f'Updated {counter} / {len(query)} products for company {product.company.name}')
         self.session.commit()
         return failed
 
@@ -124,9 +125,8 @@ class DigitecScraper(Scraper):
             price = min(data['offers']['lowPrice'], data['offers']['highPrice'])
 
         except Exception as e:
-            print(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} \
+            raise Exception(f'Failed at price extraction for {self.info[0]} with product id: {product.tag} \
                     with exception {e}, url: {self.url_product(product)}')
-            return None
         if save is not None and save:
             new_product_price = Price(price, datetime.datetime.now())
             product.prices.append(new_product_price)
@@ -247,9 +247,18 @@ class DigitecScraper(Scraper):
 
 class MicrospotScraper(Scraper):
     def scrape_price(self, product, save=False):
+        """
+        Uses Microspot API
+        :param product:
+        :param save:
+        :return:
+        """
         product = super().scrape_price(product)
         data = r.get(self.url_product(product), headers=self.header).json()
-        price = data['price']['value']
+        price = data['productPriceData']['prices'][0]['finalPrice']['value']
+
+        if not data['purchasable']:
+            raise ValueError("Product not purchasable anymore.. skipping")
 
         if save is not None and save:
             new_product_price = Price(price, datetime.datetime.now())
